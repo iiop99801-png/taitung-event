@@ -94,13 +94,13 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255,255,255,0.85); z-index: 9999;
             display: none; justify-content: center; align-items: center;
-            font-size: 22px; font-weight: bold; color: var(--taitung-blue);
+            font-size: 20px; font-weight: bold; color: var(--taitung-blue);
         }
     </style>
 </head>
 <body>
 
-<div id="loading-overlay">雲端連線中，請稍候...</div>
+<div id="loading-overlay">連線處理中...</div>
 
 <div class="app-container">
     <div class="header">
@@ -117,13 +117,13 @@
         <div class="content">
             <div id="login-member" class="sub-view active">
                 <div class="form-group"><label>手機號碼 (必填)</label><input type="tel" id="member-phone" placeholder="請輸入手機號碼"></div>
-                <div class="form-group"><label>邀請碼 (首次登入必填)</label><input type="text" id="member-code" placeholder="舊會員可留空"></div>
-                <button class="btn" onclick="handleMemberLogin()">連線登入系統</button>
+                <div class="form-group"><label>邀請碼 (首次登入必填)</label><input type="text" id="member-code" placeholder="首次登入請填寫"></div>
+                <button class="btn" onclick="handleMemberLogin()">登入系統</button>
             </div>
             
             <div id="login-admin" class="sub-view" style="display:none;">
-                <div class="form-group"><label>管理員帳號</label><input type="text" id="admin-user" placeholder="預設: 1234567"></div>
-                <div class="form-group"><label>密碼</label><input type="password" id="admin-pwd" placeholder="預設: 7654321"></div>
+                <div class="form-group"><label>管理員帳號</label><input type="text" id="admin-user" placeholder="請輸入帳號"></div>
+                <div class="form-group"><label>密碼</label><input type="password" id="admin-pwd" placeholder="請輸入密碼"></div>
                 <button class="btn btn-danger" onclick="handleAdminLogin()">登入後台</button>
             </div>
         </div>
@@ -220,10 +220,8 @@
 </div>
 
 <script>
-    // 專屬 API 網址 (已串接您的 Google 試算表)
     const API_URL = "https://script.google.com/macros/s/AKfycbwEJIiIsZf1mCrBPi-Odzn2A2USgSeIsA9nD_SHvoZ97RE5j8egQf1ItUTJSgqKF46jng/exec";
 
-    // 全域變數
     let globalPhone = "";
     let globalShopName = "";
     let globalEvent = {};
@@ -232,35 +230,40 @@
     let adminMembers = [];
     let countdownTimer = null;
 
-    // 核心 API 呼叫模組
+    // 高速無 CORS 阻擋呼叫架構
     async function apiCall(action, payload = {}) {
         document.getElementById('loading-overlay').style.display = 'flex';
         payload.action = action;
         try {
             const res = await fetch(API_URL, {
                 method: 'POST',
+                mode: 'cors',
+                redirect: 'follow',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload)
             });
             const data = await res.json();
             document.getElementById('loading-overlay').style.display = 'none';
-            if (data.error) throw new Error(data.error);
+            if (data.status === "error") {
+                alert(data.message || "操作失敗");
+                return null;
+            }
             return data;
         } catch (e) {
             document.getElementById('loading-overlay').style.display = 'none';
-            alert("網路連線錯誤，請確認網路狀態或稍後再試！");
+            alert("連線回應異常，請重新嘗試！");
             console.error(e);
             return null;
         }
     }
 
-    // 圖片壓縮演算法
     function compressImage(file, callback) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 500;
+                const MAX_WIDTH = 450;
                 let width = img.width;
                 let height = img.height;
                 if (width > MAX_WIDTH) {
@@ -280,16 +283,13 @@
 
     function formatTimeDisplay(isoString) {
         if(!isoString) return "未設定";
-        return isoString.replace("T", " ");
+        return String(isoString).replace("T", " ");
     }
     function getCurrentTimeStr() {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     }
 
-    // ==========================================
-    // 視圖與登入邏輯
-    // ==========================================
     function switchMainView(viewId, title) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         document.getElementById(viewId).classList.add('active');
@@ -310,35 +310,37 @@
     }
 
     async function handleMemberLogin() {
-        const phone = document.getElementById('member-phone').value;
-        const code = document.getElementById('member-code').value;
+        const phone = document.getElementById('member-phone').value.trim();
+        const code = document.getElementById('member-code').value.trim();
         if(!phone) return alert("請輸入手機號碼！");
 
         let shopName = "";
         if(code) {
-            shopName = prompt("請輸入您的「商家名稱」以完成綁定：") || "";
+            shopName = prompt("首次登入請設定您的「商家名稱」：") || "";
+            if(!shopName) return alert("必須設定商家名稱！");
         }
 
         const res = await apiCall("member_login", { phone, code, shopName });
         if(res && res.status === "success") {
             globalPhone = phone;
-            globalShopName = res.shopName || shopName;
-            globalEvent = res.event;
-            globalHistory = res.history;
+            globalShopName = res.shopName || shopName || "會員店家";
+            globalEvent = res.event || {};
+            globalHistory = res.history || [];
             switchMainView('sys-member', '前台 - ' + globalShopName);
             renderEventInfo();
         }
     }
 
     async function handleAdminLogin() {
-        const user = document.getElementById('admin-user').value;
-        const pwd = document.getElementById('admin-pwd').value;
+        const user = document.getElementById('admin-user').value.trim();
+        const pwd = document.getElementById('admin-pwd').value.trim();
+        if(!user || !pwd) return alert("請輸入管理員帳號與密碼！");
+
         const res = await apiCall("admin_login", { user, pwd });
-        
         if(res && res.status === "success") {
-            globalEvent = res.event;
-            adminPending = res.pending;
-            adminMembers = res.members;
+            globalEvent = res.event || {};
+            adminPending = res.pending || [];
+            adminMembers = res.members || [];
             switchMainView('sys-admin', '管理員專區');
             
             document.getElementById('set-evt-title').value = globalEvent.title || "";
@@ -353,14 +355,9 @@
                 document.getElementById('admin-poster-preview').src = globalEvent.posterImg;
                 document.getElementById('admin-poster-preview').style.display = 'block';
             }
-        } else {
-            alert("❌ 帳號或密碼錯誤！");
         }
     }
 
-    // ==========================================
-    // 會員前台邏輯
-    // ==========================================
     function startCountdowns() {
         if(countdownTimer) clearInterval(countdownTimer);
         function update() {
@@ -404,22 +401,24 @@
         if(globalEvent.posterImg) {
             posterEl.src = globalEvent.posterImg;
             posterEl.style.display = 'block';
+        } else {
+            posterEl.style.display = 'none';
         }
-        document.getElementById('display-event-title').innerText = globalEvent.title;
+        document.getElementById('display-event-title').innerText = globalEvent.title || "無活動";
         document.getElementById('display-event-datetime').innerText = "📅 活動時間：" + formatTimeDisplay(globalEvent.eventDateTime);
         document.getElementById('display-event-deadline-text').innerText = "⏳ 報名截止：" + formatTimeDisplay(globalEvent.deadline);
-        document.getElementById('display-event-location').innerText = "📍 地點：" + globalEvent.location;
-        document.getElementById('display-event-desc').innerText = globalEvent.desc;
-        document.getElementById('display-event-price').innerHTML = `大人 $${globalEvent.adultPrice} | 小孩 $${globalEvent.childPrice} | <strong style="color:var(--danger-red);">6歲以下 免費</strong>`;
-        document.getElementById('label-adult-price').innerText = `大人 ($${globalEvent.adultPrice})`;
-        document.getElementById('label-child-price').innerText = `小孩 ($${globalEvent.childPrice})`;
+        document.getElementById('display-event-location').innerText = "📍 地點：" + (globalEvent.location || "未定");
+        document.getElementById('display-event-desc').innerText = globalEvent.desc || "";
+        document.getElementById('display-event-price').innerHTML = `大人 $${globalEvent.adultPrice || 0} | 小孩 $${globalEvent.childPrice || 0} | <strong style="color:var(--danger-red);">6歲以下 免費</strong>`;
+        document.getElementById('label-adult-price').innerText = `大人 ($${globalEvent.adultPrice || 0})`;
+        document.getElementById('label-child-price').innerText = `小孩 ($${globalEvent.childPrice || 0})`;
         startCountdowns();
     }
 
     function calcTotal() {
         const a = parseInt(document.getElementById('qty-adult').value) || 0;
         const c = parseInt(document.getElementById('qty-child').value) || 0;
-        const total = (a * globalEvent.adultPrice) + (c * globalEvent.childPrice);
+        const total = (a * (globalEvent.adultPrice || 0)) + (c * (globalEvent.childPrice || 0));
         document.getElementById('calc-total-amt').innerText = total;
         return { total, pax: `大人${a}, 小孩${c}, 幼童${document.getElementById('qty-toddler').value||0}` };
     }
@@ -428,7 +427,7 @@
         const data = calcTotal();
         if(data.total === 0 && parseInt(document.getElementById('qty-adult').value) === 0) return alert("請至少選擇一位參加者！");
         
-        const regId = Date.now().toString() + Math.floor(Math.random() * 1000);
+        const regId = Date.now().toString();
         const payload = {
             id: regId, phone: globalPhone, eventTitle: globalEvent.title,
             regTime: getCurrentTimeStr(), pax: data.pax, amt: data.total
@@ -436,7 +435,7 @@
         
         const res = await apiCall("submit_reg", payload);
         if(res && res.status === "success") {
-            alert("報名已成功寫入 Google 試算表！請前往「我的報名」查看繳費資訊。");
+            alert("報名成功！請前往「我的報名」查看繳費資訊。");
             document.getElementById('mem-form-area').style.display = 'none';
             await refreshMyData();
             switchTab('sys-member', 'mem-myrecords', document.querySelectorAll('#sys-member .tab-btn')[1]);
@@ -446,7 +445,7 @@
     async function refreshMyData() {
         const res = await apiCall("member_login", { phone: globalPhone });
         if(res && res.status === "success") {
-            globalHistory = res.history;
+            globalHistory = res.history || [];
             renderMyRecord();
         }
     }
@@ -524,7 +523,7 @@
     }
 
     async function submitProof(regId) {
-        const textProof = document.getElementById('upload-text-' + regId).value;
+        const textProof = document.getElementById('upload-text-' + regId).value.trim();
         const imgEl = document.getElementById('img-preview-' + regId);
         let imgBase64 = imgEl.style.display === 'block' ? imgEl.src : "";
         
@@ -537,9 +536,6 @@
         }
     }
 
-    // ==========================================
-    // 管理員邏輯
-    // ==========================================
     function previewAdminPoster(input) {
         if (input.files && input.files[0]) {
             compressImage(input.files[0], function(base64Str) {
@@ -550,7 +546,7 @@
     }
 
     async function publishEvent() {
-        const title = document.getElementById('set-evt-title').value;
+        const title = document.getElementById('set-evt-title').value.trim();
         if(!title) return alert("請輸入活動名稱！");
         
         const imgEl = document.getElementById('admin-poster-preview');
@@ -563,22 +559,21 @@
             adultPrice: document.getElementById('set-evt-adult').value,
             childPrice: document.getElementById('set-evt-child').value,
             bank: document.getElementById('set-evt-bank').value,
-            posterImg: imgEl.style.display === 'block' ? imgEl.src : ""
+            posterImg: imgEl.style.display === 'block' ? imgEl.src : (globalEvent.posterImg || "")
         };
 
         const res = await apiCall("admin_publish", payload);
         if(res && res.status === "success") {
             alert("發佈成功！海報與圖文皆已寫入雲端。");
+            globalEvent = payload;
         }
     }
 
     async function refreshAdminData() {
-        const user = document.getElementById('admin-user').value;
-        const pwd = document.getElementById('admin-pwd').value;
-        const res = await apiCall("admin_login", { user, pwd });
+        const res = await apiCall("admin_login", { user: "1234567", pwd: "7654321" });
         if(res && res.status === "success") {
-            adminPending = res.pending;
-            adminMembers = res.members;
+            adminPending = res.pending || [];
+            adminMembers = res.members || [];
             renderAdminApprovals();
         }
     }
@@ -623,6 +618,10 @@
     function renderAdminMemberList() {
         const container = document.getElementById('member-list-container');
         container.innerHTML = "";
+        if(adminMembers.length === 0) {
+            container.innerHTML = "<p>目前尚無會員註冊名單。</p>";
+            return;
+        }
         adminMembers.forEach(mem => {
             container.innerHTML += `
                 <div class="card" style="display:flex; justify-content: space-between; align-items: center;">
