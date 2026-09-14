@@ -248,9 +248,10 @@
     let currentEvent = {};
     let countdownTimer = null;
     let myRegistrationsUnsubscribe = null;
-    let adminApprovalsUnsubscribe = null;
+    let myLocalHistory = [];
+    let adminRegistrationsUnsubscribe = null;
     let adminMembersUnsubscribe = null;
-    let adminApprovalsData = [];
+    let adminAllRegistrations = [];
     let adminMembersData = [];
 
     // UI 輔助函式
@@ -309,7 +310,7 @@
     function logout() { 
         if(countdownTimer) clearInterval(countdownTimer);
         if(myRegistrationsUnsubscribe) myRegistrationsUnsubscribe();
-        if(adminApprovalsUnsubscribe) adminApprovalsUnsubscribe();
+        if(adminRegistrationsUnsubscribe) adminRegistrationsUnsubscribe();
         if(adminMembersUnsubscribe) adminMembersUnsubscribe();
         currentPhone = ""; 
         location.reload(); 
@@ -470,7 +471,7 @@
         try {
             await db.collection("registrations").doc(regId).set({
                 id: regId,
-                phone: currentPhone,
+                phone: String(currentPhone).trim(),
                 shopName: currentShopName,
                 eventTitle: currentEvent.title || "",
                 eventDateTime: currentEvent.eventDateTime || "",
@@ -494,19 +495,23 @@
     }
 
     // ==========================================
-    // 4. 我的報名 (即時監聽狀態)
+    // 4. 我的報名 (即時監聽與渲染修復)
     // ==========================================
     function listenToMyRegistrations() {
         if(myRegistrationsUnsubscribe) myRegistrationsUnsubscribe();
         
+        const targetPhone = String(currentPhone).trim();
         myRegistrationsUnsubscribe = db.collection("registrations")
-            .where("phone", "==", currentPhone)
+            .where("phone", "==", targetPhone)
             .onSnapshot(snapshot => {
-                const history = [];
-                snapshot.forEach(doc => history.push(doc.data()));
-                // 依登記時間倒序排列
-                history.sort((a, b) => b.id.localeCompare(a.id));
-                renderMyRecord(history);
+                myLocalHistory = [];
+                snapshot.forEach(doc => {
+                    myLocalHistory.push(doc.data());
+                });
+                myLocalHistory.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+                renderMyRecord();
+            }, error => {
+                console.error("監聽我的報名失敗：", error);
             });
     }
 
@@ -520,14 +525,14 @@
         </div>`;
     }
 
-    function renderMyRecord(history) {
+    function renderMyRecord() {
         const container = document.getElementById('my-record-container');
-        if(!history || history.length === 0) { 
+        if(!myLocalHistory || myLocalHistory.length === 0) { 
             container.innerHTML = "<p>目前無任何報名紀錄。</p>"; 
             return; 
         }
         container.innerHTML = ""; 
-        history.forEach(myData => {
+        myLocalHistory.forEach(myData => {
             let htmlStr = "";
             let timelineHtml = getTimelineHTML(myData.status);
             
@@ -561,11 +566,12 @@
                 htmlStr = `
                     <div class="ticket">
                         <div style="color:#666; font-size:12px; position:absolute; top:10px; right:10px;">${formatTimeDisplay(myData.regTime)}</div>
-                        <div>憑此畫面入場</div>
+                        <div style="font-weight:bold; color:var(--vintage-green);">🎉 憑此畫面入場 🎉</div>
                         <div class="ticket-name">${myData.shopName || currentShopName}</div>
-                        <div>${myData.eventTitle}</div>${timelineHtml}
+                        <div style="font-size:18px; font-weight:bold; color:#333;">${myData.eventTitle}</div>
+                        ${timelineHtml}
                         <div style="margin-top:10px; color:var(--vintage-green); font-weight:bold;">活動時間：${formatTimeDisplay(myData.eventDateTime || currentEvent.eventDateTime)}</div>
-                        <div style="margin-top:10px;">總入場人數：<br><strong>${myData.pax}</strong></div>
+                        <div style="margin-top:10px;">總入場人數：<br><strong style="font-size:18px; color:var(--taitung-blue);">${myData.pax}</strong></div>
                         <div class="ticket-stamp">已付費報名成功</div>
                     </div>`;
             }
@@ -605,7 +611,7 @@
     }
 
     // ==========================================
-    // 5. 管理員後台
+    // 5. 管理員後台 (待審核 + 已核准清單)
     // ==========================================
     async function loadAdminPanel() {
         showLoading(true);
@@ -627,13 +633,13 @@
                 }
             }
 
-            // 即時監聽待審核名單
-            if (adminApprovalsUnsubscribe) adminApprovalsUnsubscribe();
-            adminApprovalsUnsubscribe = db.collection("registrations")
-                .where("status", "==", "pending")
+            // 即時監聽所有報名紀錄 (待審核 + 已通過)
+            if (adminRegistrationsUnsubscribe) adminRegistrationsUnsubscribe();
+            adminRegistrationsUnsubscribe = db.collection("registrations")
                 .onSnapshot(snapshot => {
-                    adminApprovalsData = [];
-                    snapshot.forEach(doc => adminApprovalsData.push(doc.data()));
+                    adminAllRegistrations = [];
+                    snapshot.forEach(doc => adminAllRegistrations.push(doc.data()));
+                    adminAllRegistrations.sort((a, b) => String(b.id).localeCompare(String(a.id)));
                     renderAdminApprovals();
                 });
 
@@ -692,28 +698,56 @@
     function renderAdminApprovals() {
         const container = document.getElementById('admin-approval-list');
         container.innerHTML = "";
-        if(!adminApprovalsData || adminApprovalsData.length === 0) {
-            container.innerHTML = "<p>目前雲端沒有待審核的名單。</p>";
-            return;
-        }
         
-        adminApprovalsData.forEach(reg => {
-            let displayImg = reg.proofImg ? `<img src="${reg.proofImg}" style="max-width:100%; border-radius:8px; margin: 10px 0; border: 1px solid #ccc;">` : "";
-            container.innerHTML += `
-                <div class="card" style="border-left: 5px solid #f0ad4e;">
-                    <h3>${reg.shopName || "店家"} (${reg.phone})</h3>
-                    <p style="color:#666; font-size:14px;">送單時間：${formatTimeDisplay(reg.regTime)}</p>
-                    <p>報名活動：${reg.eventTitle}</p>
-                    <p>應收：NT$ ${reg.amt}</p>
-                    <div style="background: #fff; padding: 10px; border-radius: 6px; border: 1px dashed #ccc;">
-                        <span style="color:var(--taitung-blue); font-weight:bold;">末五碼/備註：</span> ${reg.proofText || "未填寫"}
-                        <br>${displayImg}
+        const pendingList = adminAllRegistrations.filter(r => r.status === 'pending');
+        const approvedList = adminAllRegistrations.filter(r => r.status === 'approved');
+
+        let html = `<h4 style="margin-top:0; color:var(--taitung-blue);">⏳ 待審核名單 (${pendingList.length})</h4>`;
+        
+        if(pendingList.length === 0) {
+            html += "<p style='color:#888;'>目前沒有待審核的名單。</p>";
+        } else {
+            pendingList.forEach(reg => {
+                let displayImg = reg.proofImg ? `<img src="${reg.proofImg}" style="max-width:100%; border-radius:8px; margin: 10px 0; border: 1px solid #ccc;">` : "";
+                html += `
+                    <div class="card" style="border-left: 5px solid #f0ad4e;">
+                        <h3>${reg.shopName || "店家"} (${reg.phone})</h3>
+                        <p style="color:#666; font-size:14px;">送單時間：${formatTimeDisplay(reg.regTime)}</p>
+                        <p>報名活動：${reg.eventTitle}</p>
+                        <p>應收：NT$ ${reg.amt}</p>
+                        <div style="background: #fff; padding: 10px; border-radius: 6px; border: 1px dashed #ccc;">
+                            <span style="color:var(--taitung-blue); font-weight:bold;">末五碼/備註：</span> ${reg.proofText || "未填寫"}
+                            <br>${displayImg}
+                        </div>
+                        <button class="btn btn-outline" style="border-color:var(--vintage-green); color:var(--vintage-green); margin-top:15px;" 
+                                onclick="approvePayment('${reg.id}')">✓ 批准確認付款</button>
                     </div>
-                    <button class="btn btn-outline" style="border-color:var(--vintage-green); color:var(--vintage-green); margin-top:15px;" 
-                            onclick="approvePayment('${reg.id}')">✓ 批准確認付款</button>
-                </div>
-            `;
-        });
+                `;
+            });
+        }
+
+        html += `<hr style="margin:25px 0; border:none; border-top:1px dashed #ccc;">`;
+        html += `<h4 style="color:var(--vintage-green);">✅ 已批准名單 (${approvedList.length})</h4>`;
+
+        if(approvedList.length === 0) {
+            html += "<p style='color:#888;'>尚無已核准的名單。</p>";
+        } else {
+            approvedList.forEach(reg => {
+                html += `
+                    <div class="card" style="border-left: 5px solid var(--vintage-green);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <strong style="color:var(--taitung-blue); font-size:18px;">${reg.shopName} (${reg.phone})</strong><br>
+                                <span style="color:#666; font-size:14px;">人數：${reg.pax} | 實收：NT$ ${reg.amt}</span>
+                            </div>
+                            <span class="status-badge bg-success">已通過</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        container.innerHTML = html;
     }
 
     async function approvePayment(regId) {
