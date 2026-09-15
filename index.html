@@ -73,6 +73,13 @@
         .card p { margin: 5px 0; line-height: 1.5; }
         .summary-box { background: #eef5f0; padding: 15px; border-radius: 8px; border-left: 5px solid var(--taitung-blue); margin-bottom: 15px; }
         
+        .price-rules-box {
+            background: #fff8e7; border: 1px solid #f0ad4e; border-left: 5px solid #f0ad4e;
+            padding: 12px 15px; border-radius: 8px; margin: 15px 0;
+        }
+        .price-rules-box h4 { margin: 0 0 8px 0; color: #b7791f; font-size: 16px; }
+        .price-rules-box ul { margin: 0; padding-left: 20px; color: #444; line-height: 1.6; }
+
         .order-badge {
             display: inline-block; background: #eee; color: #555; padding: 3px 8px;
             border-radius: 4px; font-size: 12px; font-family: monospace; font-weight: bold;
@@ -166,17 +173,19 @@
                     <p id="display-event-location">📍 地點：</p>
                     <p id="display-event-desc" style="white-space: pre-wrap; color: #555; background: #fff; padding: 10px; border-radius: 6px; border: 1px dashed #ccc;"></p>
                     
-                    <div class="summary-box" style="margin-top: 15px;">
-                        <p id="display-event-price" style="font-size: 16px; margin:0; text-align:center;"></p>
+                    <!-- 收費規則區塊 -->
+                    <div class="price-rules-box">
+                        <h4>💰 活動收費標準與規則</h4>
+                        <ul id="display-event-price-rules"></ul>
                     </div>
                     
                     <button id="btn-show-form" class="btn" onclick="document.getElementById('mem-form-area').style.display='block'">我要填寫報名表</button>
                 </div>
                 
                 <div id="mem-form-area" style="display:none; border-top: 2px dashed #ccc; margin-top: 20px; padding-top: 20px;">
-                    <div class="form-group"><label id="label-adult-price">大人</label><input type="number" id="qty-adult" value="0" min="0" oninput="calcTotal()"></div>
-                    <div class="form-group"><label id="label-child-price">小孩 (6-12歲)</label><input type="number" id="qty-child" value="0" min="0" oninput="calcTotal()"></div>
-                    <div class="form-group"><label id="label-toddler-price" style="color:var(--danger-red);">6歲以下 (免費)</label><input type="number" id="qty-toddler" value="0" min="0" oninput="calcTotal()"></div>
+                    <div class="form-group"><label id="label-tier1">滿13歲以上</label><input type="number" id="qty-tier1" value="0" min="0" oninput="calcTotal()"></div>
+                    <div class="form-group"><label id="label-tier2">滿6歲~13歲</label><input type="number" id="qty-tier2" value="0" min="0" oninput="calcTotal()"></div>
+                    <div class="form-group"><label id="label-tier3" style="color:var(--danger-red);">未滿6歲 (免費)</label><input type="number" id="qty-tier3" value="0" min="0" oninput="calcTotal()"></div>
                     <div class="summary-box">總費用：NT$ <strong id="calc-total-amt" style="font-size:20px; color:var(--taitung-blue)">0</strong></div>
                     <button class="btn" onclick="submitRegistration()">確認報名送出</button>
                 </div>
@@ -209,11 +218,26 @@
                     <div class="form-group" style="flex:1;"><label>報名截止時間</label><input type="datetime-local" id="set-evt-deadline"></div>
                 </div>
                 <div class="form-group"><label>活動地點</label><input type="text" id="set-evt-location"></div>
-                <div class="form-group"><label>補充文字欄 (活動細節與說明)</label><textarea id="set-evt-desc" rows="4"></textarea></div>
-                <div style="display:flex; gap:10px;">
-                    <div class="form-group"><label>大人費用</label><input type="number" id="set-evt-adult"></div>
-                    <div class="form-group"><label>小孩費用</label><input type="number" id="set-evt-child"></div>
+                <div class="form-group"><label>補充文字欄 (活動細節與說明)</label><textarea id="set-evt-desc" rows="3"></textarea></div>
+                
+                <!-- 自訂年齡區間與收費設定 -->
+                <div style="background:#f9f9f9; padding:12px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;">
+                    <label style="color:var(--taitung-blue); font-weight:bold; margin-bottom:8px; display:block;">⚙️ 年齡區間段與收費設定 (皆可自訂)</label>
+                    <div style="display:flex; gap:8px; margin-bottom:8px;">
+                        <input type="text" id="set-tier1-name" placeholder="第1區間名稱 (例如: 滿13歲以上)" style="flex:2;">
+                        <input type="number" id="set-tier1-price" placeholder="費用" style="flex:1;">
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:8px;">
+                        <input type="text" id="set-tier2-name" placeholder="第2區間名稱 (例如: 滿6歲~13歲)" style="flex:2;">
+                        <input type="number" id="set-tier2-price" placeholder="費用" style="flex:1;">
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="set-tier3-name" placeholder="第3區間名稱 (例如: 未滿6歲)" style="flex:2;">
+                        <input type="number" id="set-tier3-price" placeholder="費用 (免費填0)" style="flex:1;">
+                    </div>
                 </div>
+
+                <div class="form-group"><label>額外收費規則補充說明 (選填)</label><input type="text" id="set-evt-rule-note" placeholder="例如：酒水自備，攜帶外食酌收清潔費"></div>
                 <div class="form-group"><label>收款銀行與帳號</label><input type="text" id="set-evt-bank"></div>
                 <button class="btn" onclick="publishEvent()">發佈並同步活動圖文</button>
             </div>
@@ -272,7 +296,6 @@
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     }
 
-    // 生成結構化訂單編號 (例如: TT-20260915-A8F2)
     function generateOrderNo() {
         const now = new Date();
         const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
@@ -390,7 +413,6 @@
         db.collection("config").doc("currentEvent").onSnapshot(doc => {
             if (doc.exists) {
                 currentEvent = doc.data();
-                renderEventInfo();
             } else {
                 currentEvent = {
                     title: "開店人生第一場烤肉趴",
@@ -398,13 +420,18 @@
                     deadline: "2026-09-30T22:00",
                     location: "早午餐",
                     desc: "！可帶非群組朋友但一定要確實報名\n！酒水自備",
-                    adultPrice: 600,
-                    childPrice: 300,
+                    tier1Name: "滿13歲以上",
+                    tier1Price: 600,
+                    tier2Name: "滿6歲~13歲",
+                    tier2Price: 300,
+                    tier3Name: "未滿6歲",
+                    tier3Price: 0,
+                    ruleNote: "未滿6歲免費入場",
                     bank: "台東測試帳號",
                     posterImg: ""
                 };
-                renderEventInfo();
             }
+            renderEventInfo();
         });
     }
 
@@ -459,23 +486,63 @@
         document.getElementById('display-event-deadline-text').innerText = "⏳ 報名截止：" + formatTimeDisplay(currentEvent.deadline);
         document.getElementById('display-event-location').innerText = "📍 地點：" + (currentEvent.location || "未定");
         document.getElementById('display-event-desc').innerText = currentEvent.desc || "";
-        document.getElementById('display-event-price').innerHTML = `大人 $${currentEvent.adultPrice || 0} | 小孩 $${currentEvent.childPrice || 0} | <strong style="color:var(--danger-red);">6歲以下 免費</strong>`;
-        document.getElementById('label-adult-price').innerText = `大人 ($${currentEvent.adultPrice || 0})`;
-        document.getElementById('label-child-price').innerText = `小孩 ($${currentEvent.childPrice || 0})`;
+
+        // 收費規則渲染
+        const t1Name = currentEvent.tier1Name || "滿13歲以上";
+        const t1Price = Number(currentEvent.tier1Price || 0);
+        const t2Name = currentEvent.tier2Name || "滿6歲~13歲";
+        const t2Price = Number(currentEvent.tier2Price || 0);
+        const t3Name = currentEvent.tier3Name || "未滿6歲";
+        const t3Price = Number(currentEvent.tier3Price || 0);
+
+        let rulesHtml = `
+            <li><strong>${t1Name}：</strong> NT$ ${t1Price} / 人</li>
+            <li><strong>${t2Name}：</strong> NT$ ${t2Price} / 人</li>
+            <li><strong>${t3Name}：</strong> ${t3Price === 0 ? '<span style="color:var(--danger-red); font-weight:bold;">免費入場</span>' : `NT$ ${t3Price} / 人`}</li>
+        `;
+        if(currentEvent.ruleNote) {
+            rulesHtml += `<li style="margin-top:4px; color:#666;">📌 備註：${currentEvent.ruleNote}</li>`;
+        }
+        document.getElementById('display-event-price-rules').innerHTML = rulesHtml;
+
+        // 表單標籤連動
+        document.getElementById('label-tier1').innerText = `${t1Name} (NT$ ${t1Price})`;
+        document.getElementById('label-tier2').innerText = `${t2Name} (NT$ ${t2Price})`;
+        document.getElementById('label-tier3').innerText = `${t3Name} (${t3Price === 0 ? '免費' : 'NT$ ' + t3Price})`;
+        
+        calcTotal();
         startCountdowns();
     }
 
     function calcTotal() {
-        const a = parseInt(document.getElementById('qty-adult').value) || 0;
-        const c = parseInt(document.getElementById('qty-child').value) || 0;
-        const total = (a * (currentEvent.adultPrice || 0)) + (c * (currentEvent.childPrice || 0));
+        const t1Price = Number(currentEvent.tier1Price || 0);
+        const t2Price = Number(currentEvent.tier2Price || 0);
+        const t3Price = Number(currentEvent.tier3Price || 0);
+
+        const q1 = parseInt(document.getElementById('qty-tier1').value) || 0;
+        const q2 = parseInt(document.getElementById('qty-tier2').value) || 0;
+        const q3 = parseInt(document.getElementById('qty-tier3').value) || 0;
+
+        const total = (q1 * t1Price) + (q2 * t2Price) + (q3 * t3Price);
         document.getElementById('calc-total-amt').innerText = total;
-        return { total, pax: `大人${a}, 小孩${c}, 幼童${document.getElementById('qty-toddler').value||0}` };
+
+        const t1Name = currentEvent.tier1Name || "滿13歲以上";
+        const t2Name = currentEvent.tier2Name || "滿6歲~13歲";
+        const t3Name = currentEvent.tier3Name || "未滿6歲";
+
+        return { 
+            total, 
+            pax: `${t1Name} ${q1}位, ${t2Name} ${q2}位, ${t3Name} ${q3}位` 
+        };
     }
 
     async function submitRegistration() {
         const data = calcTotal();
-        if(data.total === 0 && parseInt(document.getElementById('qty-adult').value) === 0) return alert("請至少選擇一位參加者！");
+        const q1 = parseInt(document.getElementById('qty-tier1').value) || 0;
+        const q2 = parseInt(document.getElementById('qty-tier2').value) || 0;
+        const q3 = parseInt(document.getElementById('qty-tier3').value) || 0;
+
+        if((q1 + q2 + q3) === 0) return alert("請至少選擇一位參加者！");
         
         showLoading(true);
         const regId = Date.now().toString();
@@ -509,7 +576,7 @@
     }
 
     // ==========================================
-    // 4. 我的報名 (含訂單編號)
+    // 4. 我的報名 (含訂單編號與年齡明細)
     // ==========================================
     function listenToMyRegistrations() {
         if(myRegistrationsUnsubscribe) myRegistrationsUnsubscribe();
@@ -557,7 +624,7 @@
                         <div style="margin-bottom:8px;">${orderNoDisplay}</div>
                         <h3>${myData.eventTitle}</h3>${timelineHtml}
                         <p style="color:#666; font-size:14px;">報名時間：${formatTimeDisplay(myData.regTime)}</p>
-                        <p>報名人數：${myData.pax}</p><p>應繳金額：NT$ ${myData.amt}</p>
+                        <p>報名名額：<strong>${myData.pax}</strong></p><p>應繳金額：<strong style="color:var(--taitung-blue); font-size:18px;">NT$ ${myData.amt}</strong></p>
                         <div class="summary-box" style="margin-top:15px;">
                             <p><strong>匯款帳號：</strong><br>${myData.bankInfo || currentEvent.bank || "請洽管理員"}</p>
                             <div class="form-group" style="margin-top:10px;">
@@ -576,7 +643,7 @@
                         <div style="margin-bottom:8px;">${orderNoDisplay}</div>
                         <h3>${myData.eventTitle}</h3>${timelineHtml}
                         <p style="color:#666; font-size:14px;">報名時間：${formatTimeDisplay(myData.regTime)}</p>
-                        <p>報名人數：${myData.pax}</p><p>應繳金額：NT$ ${myData.amt}</p>
+                        <p>報名名額：<strong>${myData.pax}</strong></p><p>應繳金額：NT$ ${myData.amt}</p>
                         <p>文字備註：${myData.proofText || "無"}</p>${imgHtml}
                     </div>`;
             } else if(myData.status === 'approved') {
@@ -589,7 +656,9 @@
                         <div style="font-size:18px; font-weight:bold; color:#333;">${myData.eventTitle}</div>
                         ${timelineHtml}
                         <div style="margin-top:10px; color:var(--vintage-green); font-weight:bold;">活動時間：${formatTimeDisplay(myData.eventDateTime || currentEvent.eventDateTime)}</div>
-                        <div style="margin-top:10px;">總入場人數：<br><strong style="font-size:18px; color:var(--taitung-blue);">${myData.pax}</strong></div>
+                        <div style="margin-top:10px; background:#fafafa; padding:8px; border-radius:6px; border:1px dashed #ccc;">
+                            總入場名額：<br><strong style="font-size:16px; color:var(--taitung-blue);">${myData.pax}</strong>
+                        </div>
                         <div class="ticket-stamp">已付費報名成功</div>
                     </div>`;
             }
@@ -629,7 +698,7 @@
     }
 
     // ==========================================
-    // 5. 管理員後台 (含訂單編號管理)
+    // 5. 管理員後台 (年齡設定與審核)
     // ==========================================
     async function loadAdminPanel() {
         showLoading(true);
@@ -642,13 +711,27 @@
                 document.getElementById('set-evt-deadline').value = data.deadline || "";
                 document.getElementById('set-evt-location').value = data.location || "";
                 document.getElementById('set-evt-desc').value = data.desc || "";
-                document.getElementById('set-evt-adult').value = data.adultPrice || 0;
-                document.getElementById('set-evt-child').value = data.childPrice || 0;
+                
+                document.getElementById('set-tier1-name').value = data.tier1Name || "滿13歲以上";
+                document.getElementById('set-tier1-price').value = data.tier1Price !== undefined ? data.tier1Price : 600;
+                document.getElementById('set-tier2-name').value = data.tier2Name || "滿6歲~13歲";
+                document.getElementById('set-tier2-price').value = data.tier2Price !== undefined ? data.tier2Price : 300;
+                document.getElementById('set-tier3-name').value = data.tier3Name || "未滿6歲";
+                document.getElementById('set-tier3-price').value = data.tier3Price !== undefined ? data.tier3Price : 0;
+                document.getElementById('set-evt-rule-note').value = data.ruleNote || "";
+
                 document.getElementById('set-evt-bank').value = data.bank || "";
                 if(data.posterImg) {
                     document.getElementById('admin-poster-preview').src = data.posterImg;
                     document.getElementById('admin-poster-preview').style.display = 'block';
                 }
+            } else {
+                document.getElementById('set-tier1-name').value = "滿13歲以上";
+                document.getElementById('set-tier1-price').value = 600;
+                document.getElementById('set-tier2-name').value = "滿6歲~13歲";
+                document.getElementById('set-tier2-price').value = 300;
+                document.getElementById('set-tier3-name').value = "未滿6歲";
+                document.getElementById('set-tier3-price').value = 0;
             }
 
             if (adminRegistrationsUnsubscribe) adminRegistrationsUnsubscribe();
@@ -695,8 +778,13 @@
             deadline: document.getElementById('set-evt-deadline').value,
             location: document.getElementById('set-evt-location').value,
             desc: document.getElementById('set-evt-desc').value,
-            adultPrice: Number(document.getElementById('set-evt-adult').value || 0),
-            childPrice: Number(document.getElementById('set-evt-child').value || 0),
+            tier1Name: document.getElementById('set-tier1-name').value.trim() || "滿13歲以上",
+            tier1Price: Number(document.getElementById('set-tier1-price').value || 0),
+            tier2Name: document.getElementById('set-tier2-name').value.trim() || "滿6歲~13歲",
+            tier2Price: Number(document.getElementById('set-tier2-price').value || 0),
+            tier3Name: document.getElementById('set-tier3-name').value.trim() || "未滿6歲",
+            tier3Price: Number(document.getElementById('set-tier3-price').value || 0),
+            ruleNote: document.getElementById('set-evt-rule-note').value.trim(),
             bank: document.getElementById('set-evt-bank').value,
             posterImg: imgEl.style.display === 'block' ? imgEl.src : (currentEvent.posterImg || ""),
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -704,7 +792,7 @@
 
         try {
             await db.collection("config").doc("currentEvent").set(payload);
-            alert("發佈成功！活動資訊已同步推播至全體會員裝置。");
+            alert("發佈成功！活動資訊與收費規則已同步推播至全體會員。");
         } catch (error) {
             alert("發佈失敗：" + error.message);
         }
@@ -733,7 +821,8 @@
                         <h3>${reg.shopName || "店家"} (${reg.phone})</h3>
                         <p style="color:#666; font-size:14px;">送單時間：${formatTimeDisplay(reg.regTime)}</p>
                         <p>報名活動：${reg.eventTitle}</p>
-                        <p>人數：${reg.pax} | 應收：NT$ ${reg.amt}</p>
+                        <p>名額明細：${reg.pax}</p>
+                        <p>應收總額：<strong style="color:var(--taitung-blue);">NT$ ${reg.amt}</strong></p>
                         <div style="background: #fff; padding: 10px; border-radius: 6px; border: 1px dashed #ccc;">
                             <span style="color:var(--taitung-blue); font-weight:bold;">末五碼/備註：</span> ${reg.proofText || "未填寫"}
                             <br>${displayImg}
@@ -759,7 +848,8 @@
                             <div>
                                 <div style="margin-bottom:4px;">${orderBadge}</div>
                                 <strong style="color:var(--taitung-blue); font-size:18px;">${reg.shopName} (${reg.phone})</strong><br>
-                                <span style="color:#666; font-size:14px;">人數：${reg.pax} | 實收：NT$ ${reg.amt}</span>
+                                <span style="color:#555; font-size:14px;">名額：${reg.pax}</span><br>
+                                <span style="color:var(--vintage-green); font-size:14px; font-weight:bold;">實收：NT$ ${reg.amt}</span>
                             </div>
                             <span class="status-badge bg-success">已通過</span>
                         </div>
