@@ -73,6 +73,11 @@
         .card p { margin: 5px 0; line-height: 1.5; }
         .summary-box { background: #eef5f0; padding: 15px; border-radius: 8px; border-left: 5px solid var(--taitung-blue); margin-bottom: 15px; }
         
+        .order-badge {
+            display: inline-block; background: #eee; color: #555; padding: 3px 8px;
+            border-radius: 4px; font-size: 12px; font-family: monospace; font-weight: bold;
+        }
+
         .status-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; }
         .bg-pending { background: #f0ad4e; }
         .bg-unpaid { background: var(--danger-red); }
@@ -242,7 +247,6 @@
     firebase.analytics();
     const db = firebase.firestore();
 
-    // 全域變數
     let currentPhone = "";
     let currentShopName = "";
     let currentEvent = {};
@@ -254,7 +258,6 @@
     let adminAllRegistrations = [];
     let adminMembersData = [];
 
-    // UI 輔助函式
     function showLoading(show) {
         document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
     }
@@ -267,6 +270,14 @@
     function getCurrentTimeStr() {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    }
+
+    // 生成結構化訂單編號 (例如: TT-20260915-A8F2)
+    function generateOrderNo() {
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        const randomHex = Math.random().toString(16).substring(2, 6).toUpperCase();
+        return `TT-${dateStr}-${randomHex}`;
     }
 
     function compressImage(file, callback) {
@@ -468,9 +479,12 @@
         
         showLoading(true);
         const regId = Date.now().toString();
+        const orderNo = generateOrderNo();
+
         try {
             await db.collection("registrations").doc(regId).set({
                 id: regId,
+                orderNo: orderNo,
                 phone: String(currentPhone).trim(),
                 shopName: currentShopName,
                 eventTitle: currentEvent.title || "",
@@ -485,7 +499,7 @@
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            alert("報名成功！請前往「我的報名」查看繳費資訊。");
+            alert(`報名成功！\n訂單編號：${orderNo}\n請前往「我的報名」查看繳費資訊。`);
             document.getElementById('mem-form-area').style.display = 'none';
             switchTab('sys-member', 'mem-myrecords', document.querySelectorAll('#sys-member .tab-btn')[1]);
         } catch (error) {
@@ -495,7 +509,7 @@
     }
 
     // ==========================================
-    // 4. 我的報名 (即時監聽與渲染修復)
+    // 4. 我的報名 (含訂單編號)
     // ==========================================
     function listenToMyRegistrations() {
         if(myRegistrationsUnsubscribe) myRegistrationsUnsubscribe();
@@ -535,10 +549,12 @@
         myLocalHistory.forEach(myData => {
             let htmlStr = "";
             let timelineHtml = getTimelineHTML(myData.status);
+            let orderNoDisplay = myData.orderNo ? `<span class="order-badge">訂單編號：${myData.orderNo}</span>` : `<span class="order-badge">編號：${myData.id}</span>`;
             
             if(myData.status === 'unpaid') {
                 htmlStr = `
                     <div class="card">
+                        <div style="margin-bottom:8px;">${orderNoDisplay}</div>
                         <h3>${myData.eventTitle}</h3>${timelineHtml}
                         <p style="color:#666; font-size:14px;">報名時間：${formatTimeDisplay(myData.regTime)}</p>
                         <p>報名人數：${myData.pax}</p><p>應繳金額：NT$ ${myData.amt}</p>
@@ -557,6 +573,7 @@
                 let imgHtml = myData.proofImg ? `<img src="${myData.proofImg}" style="max-width:100%; border-radius:8px; margin-top:10px;">` : "";
                 htmlStr = `
                     <div class="card">
+                        <div style="margin-bottom:8px;">${orderNoDisplay}</div>
                         <h3>${myData.eventTitle}</h3>${timelineHtml}
                         <p style="color:#666; font-size:14px;">報名時間：${formatTimeDisplay(myData.regTime)}</p>
                         <p>報名人數：${myData.pax}</p><p>應繳金額：NT$ ${myData.amt}</p>
@@ -566,6 +583,7 @@
                 htmlStr = `
                     <div class="ticket">
                         <div style="color:#666; font-size:12px; position:absolute; top:10px; right:10px;">${formatTimeDisplay(myData.regTime)}</div>
+                        <div style="margin-bottom:6px;">${orderNoDisplay}</div>
                         <div style="font-weight:bold; color:var(--vintage-green);">🎉 憑此畫面入場 🎉</div>
                         <div class="ticket-name">${myData.shopName || currentShopName}</div>
                         <div style="font-size:18px; font-weight:bold; color:#333;">${myData.eventTitle}</div>
@@ -611,7 +629,7 @@
     }
 
     // ==========================================
-    // 5. 管理員後台 (待審核 + 已核准清單)
+    // 5. 管理員後台 (含訂單編號管理)
     // ==========================================
     async function loadAdminPanel() {
         showLoading(true);
@@ -633,7 +651,6 @@
                 }
             }
 
-            // 即時監聽所有報名紀錄 (待審核 + 已通過)
             if (adminRegistrationsUnsubscribe) adminRegistrationsUnsubscribe();
             adminRegistrationsUnsubscribe = db.collection("registrations")
                 .onSnapshot(snapshot => {
@@ -643,7 +660,6 @@
                     renderAdminApprovals();
                 });
 
-            // 即時監聽會員清單
             if (adminMembersUnsubscribe) adminMembersUnsubscribe();
             adminMembersUnsubscribe = db.collection("members")
                 .onSnapshot(snapshot => {
@@ -709,12 +725,15 @@
         } else {
             pendingList.forEach(reg => {
                 let displayImg = reg.proofImg ? `<img src="${reg.proofImg}" style="max-width:100%; border-radius:8px; margin: 10px 0; border: 1px solid #ccc;">` : "";
+                let orderBadge = reg.orderNo ? `<span class="order-badge">訂單編號：${reg.orderNo}</span>` : `<span class="order-badge">編號：${reg.id}</span>`;
+
                 html += `
                     <div class="card" style="border-left: 5px solid #f0ad4e;">
+                        <div style="margin-bottom:6px;">${orderBadge}</div>
                         <h3>${reg.shopName || "店家"} (${reg.phone})</h3>
                         <p style="color:#666; font-size:14px;">送單時間：${formatTimeDisplay(reg.regTime)}</p>
                         <p>報名活動：${reg.eventTitle}</p>
-                        <p>應收：NT$ ${reg.amt}</p>
+                        <p>人數：${reg.pax} | 應收：NT$ ${reg.amt}</p>
                         <div style="background: #fff; padding: 10px; border-radius: 6px; border: 1px dashed #ccc;">
                             <span style="color:var(--taitung-blue); font-weight:bold;">末五碼/備註：</span> ${reg.proofText || "未填寫"}
                             <br>${displayImg}
@@ -733,10 +752,12 @@
             html += "<p style='color:#888;'>尚無已核准的名單。</p>";
         } else {
             approvedList.forEach(reg => {
+                let orderBadge = reg.orderNo ? `<span class="order-badge">訂單：${reg.orderNo}</span>` : `<span class="order-badge">編號：${reg.id}</span>`;
                 html += `
                     <div class="card" style="border-left: 5px solid var(--vintage-green);">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <div>
+                                <div style="margin-bottom:4px;">${orderBadge}</div>
                                 <strong style="color:var(--taitung-blue); font-size:18px;">${reg.shopName} (${reg.phone})</strong><br>
                                 <span style="color:#666; font-size:14px;">人數：${reg.pax} | 實收：NT$ ${reg.amt}</span>
                             </div>
