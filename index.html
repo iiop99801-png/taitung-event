@@ -15,6 +15,7 @@
             --taitung-blue: #005CAF; 
             --vintage-green: #2b5f3a; 
             --danger-red: #d9534f;
+            --warning-orange: #f0ad4e;
             --bg-light: #f5f5f5;
         }
 
@@ -46,7 +47,7 @@
         .nav-tabs { display: flex; background: #eee; border-bottom: 2px solid var(--vintage-green); }
         .nav-tabs button {
             flex: 1; padding: 12px; border: none; background: none;
-            font-size: 15px; font-weight: bold; cursor: pointer; color: #666;
+            font-size: 14px; font-weight: bold; cursor: pointer; color: #666;
         }
         .nav-tabs button.active { background: white; color: var(--taitung-blue); border-bottom: 4px solid var(--taitung-blue); }
 
@@ -66,10 +67,12 @@
             cursor: pointer; margin-top: 10px; text-align: center; box-sizing: border-box;
         }
         .btn-outline { background: white; color: var(--vintage-green); border: 2px solid var(--vintage-green); }
-        .btn-danger { background: var(--danger-red); }
+        .btn-danger { background: var(--danger-red); color: white; }
+        .btn-warning { background: var(--warning-orange); color: white; }
+        .btn-sm { padding: 6px 10px; font-size: 13px; width: auto; display: inline-block; margin-top: 0; }
         
         .card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; background: #fafafa; }
-        .card h3 { margin: 0 0 10px 0; color: var(--taitung-blue); font-size: 22px; }
+        .card h3 { margin: 0 0 10px 0; color: var(--taitung-blue); font-size: 20px; }
         .card p { margin: 5px 0; line-height: 1.5; }
         .summary-box { background: #eef5f0; padding: 15px; border-radius: 8px; border-left: 5px solid var(--taitung-blue); margin-bottom: 15px; }
         
@@ -89,9 +92,11 @@
         .bg-pending { background: #f0ad4e; }
         .bg-unpaid { background: var(--danger-red); }
         .bg-success { background: var(--vintage-green); }
+        .bg-refunding { background: #e67e22; }
+        .bg-refunded { background: #7f8c8d; }
 
         .ticket { border: 3px dashed var(--vintage-green); padding: 20px; text-align: center; background: white; margin-bottom: 20px; position: relative; }
-        .ticket-name { color: var(--taitung-blue); font-size: 28px; font-weight: bold; margin: 10px 0; }
+        .ticket-name { color: var(--taitung-blue); font-size: 26px; font-weight: bold; margin: 10px 0; }
         .ticket-stamp { margin-top: 15px; display: inline-block; border: 3px solid #d9534f; color: #d9534f; padding: 8px 16px; font-size: 20px; font-weight: bold; transform: rotate(-5deg); border-radius: 8px; }
         
         .proof-img-preview { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 10px; display: none; border: 1px solid #ccc; }
@@ -99,10 +104,10 @@
         
         .countdown-text { font-size: 18px; font-weight: bold; letter-spacing: 1px; }
         
-        .timeline { display: flex; justify-content: space-between; position: relative; margin: 20px 0; text-align: center; font-size: 13px; font-weight: bold; color: #ccc; }
+        .timeline { display: flex; justify-content: space-between; position: relative; margin: 20px 0; text-align: center; font-size: 12px; font-weight: bold; color: #ccc; }
         .timeline::before { content: ''; position: absolute; top: 12px; left: 10%; right: 10%; height: 3px; background: #ddd; z-index: 1; }
         .timeline-step { position: relative; z-index: 2; flex: 1; }
-        .timeline-icon { width: 26px; height: 26px; border-radius: 50%; background: #ddd; margin: 0 auto 5px; line-height: 26px; color: white; font-size: 14px; }
+        .timeline-icon { width: 26px; height: 26px; border-radius: 50%; background: #ddd; margin: 0 auto 5px; line-height: 26px; color: white; font-size: 13px; }
         .timeline-step.active .timeline-icon { background: var(--taitung-blue); box-shadow: 0 0 0 3px rgba(0,92,175,0.2); }
         .timeline-step.active { color: var(--taitung-blue); }
         .timeline-step.done .timeline-icon { background: var(--vintage-green); }
@@ -160,7 +165,7 @@
                     <h3 id="display-event-title">載入中...</h3>
                     
                     <div class="summary-box" style="margin-top: 15px; border-left-color: var(--danger-red);">
-                        <p style="margin: 0; font-weight: bold; color: var(--danger-red);">⏳ 報名截止倒數：</p>
+                        <p style="margin: 0; font-weight: bold; color: var(--danger-red);">⏳ 報名截止倒數 (截止前可100%全額退款)：</p>
                         <div id="countdown-deadline" class="countdown-text" style="color:var(--danger-red);">計算中...</div>
                     </div>
                     <div class="summary-box" style="margin-top: 15px; border-left-color: var(--vintage-green);">
@@ -177,6 +182,7 @@
                     <div class="price-rules-box">
                         <h4>💰 活動收費標準與規則</h4>
                         <ul id="display-event-price-rules"></ul>
+                        <p style="margin:8px 0 0 0; font-size:13px; color:#c0392b; font-weight:bold;">🛡️ 退款政策：報名截止時間前均可申請 100% 原路全額退款；截止後恕不受理退款。</p>
                     </div>
                     
                     <button id="btn-show-form" class="btn" onclick="document.getElementById('mem-form-area').style.display='block'">我要填寫報名表</button>
@@ -201,7 +207,7 @@
     <div id="sys-admin" class="view">
         <div class="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('sys-admin', 'admin-event', this)">發佈活動</button>
-            <button class="tab-btn" onclick="switchTab('sys-admin', 'admin-approve', this); renderAdminApprovals();">名單審核</button>
+            <button class="tab-btn" onclick="switchTab('sys-admin', 'admin-approve', this); renderAdminApprovals();">名單與退款審核</button>
             <button class="tab-btn" onclick="switchTab('sys-admin', 'admin-members', this); renderAdminMemberList();">會員管理</button>
         </div>
         <div class="content">
@@ -215,7 +221,7 @@
                 <div class="form-group"><label>活動名稱</label><input type="text" id="set-evt-title"></div>
                 <div style="display:flex; gap:10px;">
                     <div class="form-group" style="flex:1;"><label>活動舉辦時間</label><input type="datetime-local" id="set-evt-datetime"></div>
-                    <div class="form-group" style="flex:1;"><label>報名截止時間</label><input type="datetime-local" id="set-evt-deadline"></div>
+                    <div class="form-group" style="flex:1;"><label>報名截止時間 (可退款期限)</label><input type="datetime-local" id="set-evt-deadline"></div>
                 </div>
                 <div class="form-group"><label>活動地點</label><input type="text" id="set-evt-location"></div>
                 <div class="form-group"><label>補充文字欄 (活動細節與說明)</label><textarea id="set-evt-desc" rows="3"></textarea></div>
@@ -301,6 +307,13 @@
         const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
         const randomHex = Math.random().toString(16).substring(2, 6).toUpperCase();
         return `TT-${dateStr}-${randomHex}`;
+    }
+
+    function isBeforeDeadline() {
+        if (!currentEvent.deadline) return true;
+        const dlTime = new Date(currentEvent.deadline).getTime();
+        const now = new Date().getTime();
+        return now < dlTime;
     }
 
     function compressImage(file, callback) {
@@ -450,7 +463,7 @@
                     document.getElementById('countdown-deadline').innerText = `${d}天 ${h}時 ${m}分 ${s}秒`;
                     document.getElementById('btn-show-form').style.display = 'block';
                 } else {
-                    document.getElementById('countdown-deadline').innerText = "已截止";
+                    document.getElementById('countdown-deadline').innerText = "已截止 (已停止退款申請)";
                     document.getElementById('btn-show-form').style.display = 'none';
                     document.getElementById('mem-form-area').style.display = 'none';
                 }
@@ -487,7 +500,6 @@
         document.getElementById('display-event-location').innerText = "📍 地點：" + (currentEvent.location || "未定");
         document.getElementById('display-event-desc').innerText = currentEvent.desc || "";
 
-        // 收費規則渲染
         const t1Name = currentEvent.tier1Name || "滿13歲以上";
         const t1Price = Number(currentEvent.tier1Price || 0);
         const t2Name = currentEvent.tier2Name || "滿6歲~13歲";
@@ -505,7 +517,6 @@
         }
         document.getElementById('display-event-price-rules').innerHTML = rulesHtml;
 
-        // 表單標籤連動
         document.getElementById('label-tier1').innerText = `${t1Name} (NT$ ${t1Price})`;
         document.getElementById('label-tier2').innerText = `${t2Name} (NT$ ${t2Price})`;
         document.getElementById('label-tier3').innerText = `${t3Name} (${t3Price === 0 ? '免費' : 'NT$ ' + t3Price})`;
@@ -563,6 +574,9 @@
                 status: "unpaid",
                 proofText: "",
                 proofImg: "",
+                refundBankCode: "",
+                refundAccount: "",
+                refundName: "",
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
@@ -576,7 +590,7 @@
     }
 
     // ==========================================
-    // 4. 我的報名 (含訂單編號與年齡明細)
+    // 4. 我的報名 (含退款申請與狀態流轉)
     // ==========================================
     function listenToMyRegistrations() {
         if(myRegistrationsUnsubscribe) myRegistrationsUnsubscribe();
@@ -597,6 +611,23 @@
     }
 
     function getTimelineHTML(status) {
+        if (status === 'refunding') {
+            return `
+            <div class="timeline">
+                <div class="timeline-step done"><div class="timeline-icon">✓</div><div>已付款</div></div>
+                <div class="timeline-step active"><div class="timeline-icon" style="background:var(--warning-orange);">2</div><div style="color:var(--warning-orange);">退款處理中</div></div>
+                <div class="timeline-step"><div class="timeline-icon">3</div><div>退款完成</div></div>
+            </div>`;
+        }
+        if (status === 'refunded') {
+            return `
+            <div class="timeline">
+                <div class="timeline-step done"><div class="timeline-icon">✓</div><div>已付款</div></div>
+                <div class="timeline-step done"><div class="timeline-icon">✓</div><div>退款核對</div></div>
+                <div class="timeline-step done"><div class="timeline-icon" style="background:#7f8c8d;">✓</div><div style="color:#7f8c8d;">已全額退款</div></div>
+            </div>`;
+        }
+
         const isApproved = (status === 'approved');
         return `
         <div class="timeline">
@@ -613,6 +644,8 @@
             return; 
         }
         container.innerHTML = ""; 
+        const canRefund = isBeforeDeadline();
+
         myLocalHistory.forEach(myData => {
             let htmlStr = "";
             let timelineHtml = getTimelineHTML(myData.status);
@@ -621,7 +654,7 @@
             if(myData.status === 'unpaid') {
                 htmlStr = `
                     <div class="card">
-                        <div style="margin-bottom:8px;">${orderNoDisplay}</div>
+                        <div style="margin-bottom:8px;">${orderNoDisplay} <span class="status-badge bg-unpaid">待付款</span></div>
                         <h3>${myData.eventTitle}</h3>${timelineHtml}
                         <p style="color:#666; font-size:14px;">報名時間：${formatTimeDisplay(myData.regTime)}</p>
                         <p>報名名額：<strong>${myData.pax}</strong></p><p>應繳金額：<strong style="color:var(--taitung-blue); font-size:18px;">NT$ ${myData.amt}</strong></p>
@@ -634,19 +667,27 @@
                             </div>
                             <div class="form-group"><label>✍️ 或輸入帳號末五碼</label><input type="text" id="upload-text-${myData.id}"></div>
                             <button class="btn btn-outline" onclick="submitProof('${myData.id}')">送出明細至雲端</button>
+                            <button class="btn btn-danger btn-sm" style="margin-top:10px; width:100%;" onclick="cancelUnpaidOrder('${myData.id}')">直接取消未付款訂單</button>
                         </div>
                     </div>`;
             } else if(myData.status === 'pending') {
                 let imgHtml = myData.proofImg ? `<img src="${myData.proofImg}" style="max-width:100%; border-radius:8px; margin-top:10px;">` : "";
                 htmlStr = `
                     <div class="card">
-                        <div style="margin-bottom:8px;">${orderNoDisplay}</div>
+                        <div style="margin-bottom:8px;">${orderNoDisplay} <span class="status-badge bg-pending">付款審核中</span></div>
                         <h3>${myData.eventTitle}</h3>${timelineHtml}
                         <p style="color:#666; font-size:14px;">報名時間：${formatTimeDisplay(myData.regTime)}</p>
                         <p>報名名額：<strong>${myData.pax}</strong></p><p>應繳金額：NT$ ${myData.amt}</p>
                         <p>文字備註：${myData.proofText || "無"}</p>${imgHtml}
                     </div>`;
             } else if(myData.status === 'approved') {
+                let refundBtn = canRefund ? `
+                    <div style="margin-top:15px; border-top:1px dashed #ccc; padding-top:10px;">
+                        <button class="btn btn-outline" style="border-color:var(--danger-red); color:var(--danger-red);" onclick="requestRefundModal('${myData.id}', ${myData.amt})">
+                            申請 100% 全額退款 (截止前受理)
+                        </button>
+                    </div>` : `<p style="font-size:12px; color:#888; margin-top:10px;">⚠️ 活動已截止報名，恕不再提供退款服務。</p>`;
+
                 htmlStr = `
                     <div class="ticket">
                         <div style="color:#666; font-size:12px; position:absolute; top:10px; right:10px;">${formatTimeDisplay(myData.regTime)}</div>
@@ -660,6 +701,29 @@
                             總入場名額：<br><strong style="font-size:16px; color:var(--taitung-blue);">${myData.pax}</strong>
                         </div>
                         <div class="ticket-stamp">已付費報名成功</div>
+                        ${refundBtn}
+                    </div>`;
+            } else if(myData.status === 'refunding') {
+                htmlStr = `
+                    <div class="card" style="border-left: 5px solid var(--warning-orange);">
+                        <div style="margin-bottom:8px;">${orderNoDisplay} <span class="status-badge bg-refunding">退款處理中</span></div>
+                        <h3>${myData.eventTitle}</h3>${timelineHtml}
+                        <div class="summary-box" style="background:#fffaf0; border-left-color:var(--warning-orange);">
+                            <p style="margin:0 0 5px 0; color:#b7791f; font-weight:bold;">主辦方正在協助進行原路退款：</p>
+                            <p style="margin:2px 0;"><strong>應退金額：</strong>NT$ ${myData.amt} (100% 全額退款)</p>
+                            <p style="margin:2px 0;"><strong>退款銀行：</strong>${myData.refundBankCode}</p>
+                            <p style="margin:2px 0;"><strong>匯款帳號：</strong>${myData.refundAccount}</p>
+                            <p style="margin:2px 0;"><strong>戶名：</strong>${myData.refundName}</p>
+                            <p style="font-size:12px; color:#888; margin-top:5px;">款項匯出後管理員將完成核銷，請留意您的帳戶明細。</p>
+                        </div>
+                    </div>`;
+            } else if(myData.status === 'refunded') {
+                htmlStr = `
+                    <div class="card" style="border-left: 5px solid #7f8c8d; opacity:0.85;">
+                        <div style="margin-bottom:8px;">${orderNoDisplay} <span class="status-badge bg-refunded">已全額退款</span></div>
+                        <h3 style="color:#7f8c8d; text-decoration:line-through;">${myData.eventTitle}</h3>${timelineHtml}
+                        <p style="color:#666;">本訂單已於截止日前完成 100% 原路退款手續，電子票券已自動失效作廢。</p>
+                        <p style="font-size:13px; color:#888;">退回帳戶：${myData.refundBankCode} - ${myData.refundAccount} (${myData.refundName})</p>
                     </div>`;
             }
             container.innerHTML += htmlStr;
@@ -697,8 +761,52 @@
         showLoading(false);
     }
 
+    async function cancelUnpaidOrder(regId) {
+        if(confirm("確定要取消此筆未付款的報名嗎？")) {
+            showLoading(true);
+            try {
+                await db.collection("registrations").doc(regId).delete();
+                alert("已成功取消報名！");
+            } catch (error) {
+                alert("取消失敗：" + error.message);
+            }
+            showLoading(false);
+        }
+    }
+
+    // 會員主動申請退款
+    async function requestRefundModal(regId, amt) {
+        if (!isBeforeDeadline()) {
+            return alert("活動已超過報名截止時間，無法申請退款。");
+        }
+
+        const bankCode = prompt(`【100%全額退款申請】\n退款金額：NT$ ${amt}\n\n請輸入【匯款銀行代號】(例如: 004 台灣銀行)：`);
+        if (!bankCode) return;
+        const account = prompt("請輸入【匯款帳號】(請確保為原付款或本人帳號以供原路退回)：");
+        if (!account) return;
+        const name = prompt("請輸入【戶名】：");
+        if (!name) return;
+
+        if (confirm(`確認申請全額退款？\n退款銀行：${bankCode}\n退款帳號：${account}\n戶名：${name}\n\n送出後管理員將協助原路退回 NT$ ${amt}。`)) {
+            showLoading(true);
+            try {
+                await db.collection("registrations").doc(regId).update({
+                    status: "refunding",
+                    refundBankCode: bankCode.trim(),
+                    refundAccount: account.trim(),
+                    refundName: name.trim(),
+                    refundRequestedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert("退款申請已送出！主辦方核對帳戶後將協助原路退款。");
+            } catch (error) {
+                alert("申請失敗：" + error.message);
+            }
+            showLoading(false);
+        }
+    }
+
     // ==========================================
-    // 5. 管理員後台 (年齡設定與審核)
+    // 5. 管理員後台 (含退款核銷管理)
     // ==========================================
     async function loadAdminPanel() {
         showLoading(true);
@@ -803,11 +911,43 @@
         const container = document.getElementById('admin-approval-list');
         container.innerHTML = "";
         
+        const refundingList = adminAllRegistrations.filter(r => r.status === 'refunding');
         const pendingList = adminAllRegistrations.filter(r => r.status === 'pending');
         const approvedList = adminAllRegistrations.filter(r => r.status === 'approved');
+        const refundedList = adminAllRegistrations.filter(r => r.status === 'refunded');
 
-        let html = `<h4 style="margin-top:0; color:var(--taitung-blue);">⏳ 待審核名單 (${pendingList.length})</h4>`;
-        
+        let html = "";
+
+        // 1. 待處理退款專區 (最高優先順序)
+        html += `<h4 style="margin-top:0; color:#d35400;">🔄 待處理原路退款名單 (${refundingList.length})</h4>`;
+        if (refundingList.length === 0) {
+            html += "<p style='color:#888;'>目前沒有待退款的申請。</p>";
+        } else {
+            refundingList.forEach(reg => {
+                let orderBadge = reg.orderNo ? `<span class="order-badge">訂單：${reg.orderNo}</span>` : `<span class="order-badge">編號：${reg.id}</span>`;
+                html += `
+                    <div class="card" style="border-left: 5px solid var(--warning-orange); background:#fffdfa;">
+                        <div style="margin-bottom:6px;">${orderBadge} <span class="status-badge bg-refunding">退款申請中</span></div>
+                        <h3>${reg.shopName || "店家"} (${reg.phone})</h3>
+                        <p style="color:#c0392b; font-size:16px; font-weight:bold;">應退款金額：NT$ ${reg.amt} (100%全額退)</p>
+                        <div style="background:#fff; padding:10px; border-radius:6px; border:1px dashed #f0ad4e; line-height:1.6;">
+                            <strong style="color:var(--taitung-blue);">原路退回帳戶資訊：</strong><br>
+                            🏦 銀行代號/名稱：${reg.refundBankCode || "未填"}<br>
+                            💳 匯款帳號：<strong style="color:var(--danger-red); font-size:16px;">${reg.refundAccount || "未填"}</strong><br>
+                            👤 戶名：${reg.refundName || "未填"}
+                        </div>
+                        <button class="btn btn-warning" style="margin-top:12px;" onclick="confirmRefundComplete('${reg.id}')">
+                            ✓ 確認款項已退回 (完成退款核銷)
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        html += `<hr style="margin:25px 0; border:none; border-top:1px dashed #ccc;">`;
+
+        // 2. 待審核付款專區
+        html += `<h4 style="color:var(--taitung-blue);">⏳ 待審核付款名單 (${pendingList.length})</h4>`;
         if(pendingList.length === 0) {
             html += "<p style='color:#888;'>目前沒有待審核的名單。</p>";
         } else {
@@ -835,8 +975,9 @@
         }
 
         html += `<hr style="margin:25px 0; border:none; border-top:1px dashed #ccc;">`;
-        html += `<h4 style="color:var(--vintage-green);">✅ 已批准名單 (${approvedList.length})</h4>`;
 
+        // 3. 已批准有效名單
+        html += `<h4 style="color:var(--vintage-green);">✅ 已批准有效名單 (${approvedList.length})</h4>`;
         if(approvedList.length === 0) {
             html += "<p style='color:#888;'>尚無已核准的名單。</p>";
         } else {
@@ -844,7 +985,7 @@
                 let orderBadge = reg.orderNo ? `<span class="order-badge">訂單：${reg.orderNo}</span>` : `<span class="order-badge">編號：${reg.id}</span>`;
                 html += `
                     <div class="card" style="border-left: 5px solid var(--vintage-green);">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                             <div>
                                 <div style="margin-bottom:4px;">${orderBadge}</div>
                                 <strong style="color:var(--taitung-blue); font-size:18px;">${reg.shopName} (${reg.phone})</strong><br>
@@ -853,6 +994,25 @@
                             </div>
                             <span class="status-badge bg-success">已通過</span>
                         </div>
+                        <div style="margin-top:10px; text-align:right;">
+                            <button class="btn btn-danger btn-sm" onclick="adminInitiateRefund('${reg.id}', ${reg.amt})">協助取消並發起退款</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 4. 已完成退款作廢名單
+        if (refundedList.length > 0) {
+            html += `<hr style="margin:25px 0; border:none; border-top:1px dashed #ccc;">`;
+            html += `<h4 style="color:#7f8c8d;">📁 已完成退款紀錄 (${refundedList.length})</h4>`;
+            refundedList.forEach(reg => {
+                let orderBadge = reg.orderNo ? `<span class="order-badge">訂單：${reg.orderNo}</span>` : `<span class="order-badge">編號：${reg.id}</span>`;
+                html += `
+                    <div class="card" style="border-left: 5px solid #7f8c8d; opacity:0.8;">
+                        <div style="margin-bottom:4px;">${orderBadge} <span class="status-badge bg-refunded">已退款</span></div>
+                        <strong>${reg.shopName} (${reg.phone})</strong> - 已全額退回 NT$ ${reg.amt}<br>
+                        <span style="font-size:12px; color:#888;">原路帳戶：${reg.refundBankCode} - ${reg.refundAccount} (${reg.refundName})</span>
                     </div>
                 `;
             });
@@ -872,6 +1032,49 @@
                 alert("已批准！該會員裝置已即時跳轉為電子邀請函。");
             } catch (error) {
                 alert("核准失敗：" + error.message);
+            }
+            showLoading(false);
+        }
+    }
+
+    // 管理員端主動發起退款
+    async function adminInitiateRefund(regId, amt) {
+        const bankCode = prompt(`【管理員協助發起退款】\n退款金額：NT$ ${amt}\n\n請輸入會員的【匯款銀行代號】：`);
+        if (!bankCode) return;
+        const account = prompt("請輸入會員的【匯款帳號】：");
+        if (!account) return;
+        const name = prompt("請輸入會員的【戶名】：");
+        if (!name) return;
+
+        showLoading(true);
+        try {
+            await db.collection("registrations").doc(regId).update({
+                status: "refunding",
+                refundBankCode: bankCode.trim(),
+                refundAccount: account.trim(),
+                refundName: name.trim(),
+                refundInitiatedByAdmin: true,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert("已將此訂單轉入「待退款名單」！");
+        } catch (error) {
+            alert("操作失敗：" + error.message);
+        }
+        showLoading(false);
+    }
+
+    // 管理員確認完成退款核銷
+    async function confirmRefundComplete(regId) {
+        if(confirm("確認已經透過網銀將 100% 款項原路退回給會員了嗎？\n\n核銷後電子票券將永久作廢。")) {
+            showLoading(true);
+            try {
+                await db.collection("registrations").doc(regId).update({
+                    status: "refunded",
+                    refundCompletedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert("退款核銷成功！已同步至會員端。");
+            } catch (error) {
+                alert("核銷失敗：" + error.message);
             }
             showLoading(false);
         }
