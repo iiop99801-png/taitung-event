@@ -76,6 +76,15 @@
         .card p { margin: 5px 0; line-height: 1.5; }
         .summary-box { background: #eef5f0; padding: 15px; border-radius: 8px; border-left: 5px solid var(--taitung-blue); margin-bottom: 15px; }
         
+        .stat-banner {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;
+        }
+        .stat-card {
+            background: #fdfdfd; border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center;
+        }
+        .stat-card .num { font-size: 20px; font-weight: bold; color: var(--taitung-blue); }
+        .stat-card .label { font-size: 12px; color: #666; margin-top: 2px; }
+
         .price-rules-box {
             background: #fff8e7; border: 1px solid #f0ad4e; border-left: 5px solid #f0ad4e;
             padding: 12px 15px; border-radius: 8px; margin: 15px 0;
@@ -94,6 +103,8 @@
         .bg-success { background: var(--vintage-green); }
         .bg-refunding { background: #e67e22; }
         .bg-refunded { background: #7f8c8d; }
+        .bg-expired { background: #95a5a6; }
+        .bg-issue { background: #c0392b; }
 
         .ticket { border: 3px dashed var(--vintage-green); padding: 20px; text-align: center; background: white; margin-bottom: 20px; position: relative; }
         .ticket-name { color: var(--taitung-blue); font-size: 26px; font-weight: bold; margin: 10px 0; }
@@ -145,9 +156,12 @@
             </div>
             
             <div id="login-admin" class="sub-view" style="display:none;">
-                <div class="form-group"><label>管理員帳號</label><input type="text" id="admin-user" placeholder="請輸入帳號"></div>
-                <div class="form-group"><label>密碼</label><input type="password" id="admin-pwd" placeholder="請輸入密碼"></div>
-                <button class="btn btn-danger" onclick="handleAdminLogin()">登入後台</button>
+                <div class="summary-box" style="font-size: 13px; line-height: 1.5;">
+                    首次使用管理員請輸入邀請碼 <strong>aaaa8888</strong>，並自訂一組管理員代碼（英文+數字）。後續只需輸入該代碼即可登入。
+                </div>
+                <div class="form-group"><label>管理員代碼 (英數組合)</label><input type="text" id="admin-custom-code" placeholder="請輸入代碼 (例如: admin888)"></div>
+                <div class="form-group"><label>管理員邀請碼 (首次啟用必填)</label><input type="password" id="admin-invite-code" placeholder="首次登入請輸入 aaaa8888"></div>
+                <button class="btn btn-danger" onclick="handleAdminLogin()">登入管理後台</button>
             </div>
         </div>
     </div>
@@ -165,7 +179,7 @@
                     <h3 id="display-event-title">載入中...</h3>
                     
                     <div class="summary-box" style="margin-top: 15px; border-left-color: var(--danger-red);">
-                        <p style="margin: 0; font-weight: bold; color: var(--danger-red);">⏳ 報名截止倒數 (截止前可申請退款)：</p>
+                        <p style="margin: 0; font-weight: bold; color: var(--danger-red);">⏳ 報名截止倒數 (截止後未付款訂單自動關閉)：</p>
                         <div id="countdown-deadline" class="countdown-text" style="color:var(--danger-red);">計算中...</div>
                     </div>
                     <div class="summary-box" style="margin-top: 15px; border-left-color: var(--vintage-green);">
@@ -183,7 +197,7 @@
                         <h4>💰 活動收費標準與規則</h4>
                         <ul id="display-event-price-rules"></ul>
                         <p style="margin:8px 0 0 0; font-size:13px; color:#c0392b; font-weight:bold;">
-                            🛡️ 退款政策：報名截止前可提出申請，需酌收 <strong>5% 退款手續費</strong> (實際退還 95% 款項)；活動截止後恕受理任何退款。
+                            🛡️ 說明：報名截止前可申請退款，需酌收 5% 退款手續費 (退還 95%)；截止後未付款訂單將自動逾期關閉，已繳費審核中的訂單仍可繼續完成核銷。
                         </p>
                     </div>
                     
@@ -223,7 +237,7 @@
                 <div class="form-group"><label>活動名稱</label><input type="text" id="set-evt-title"></div>
                 <div style="display:flex; gap:10px;">
                     <div class="form-group" style="flex:1;"><label>活動舉辦時間</label><input type="datetime-local" id="set-evt-datetime"></div>
-                    <div class="form-group" style="flex:1;"><label>報名截止時間 (可退款期限)</label><input type="datetime-local" id="set-evt-deadline"></div>
+                    <div class="form-group" style="flex:1;"><label>報名截止時間 (未付款自動關閉)</label><input type="datetime-local" id="set-evt-deadline"></div>
                 </div>
                 <div class="form-group"><label>活動地點</label><input type="text" id="set-evt-location"></div>
                 <div class="form-group"><label>補充文字欄 (活動細節與說明)</label><textarea id="set-evt-desc" rows="3"></textarea></div>
@@ -251,6 +265,17 @@
             </div>
 
             <div id="admin-approve" class="sub-view" style="display:none;">
+                <!-- 後台款項統計面板 -->
+                <div class="stat-banner">
+                    <div class="stat-card">
+                        <div class="num" style="color:var(--vintage-green);" id="stat-total-received">NT$ 0</div>
+                        <div class="label">已實收核銷總額</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="num" style="color:var(--warning-orange);" id="stat-pending-amt">NT$ 0</div>
+                        <div class="label">待審核款項金額</div>
+                    </div>
+                </div>
                 <div id="admin-approval-list"></div>
             </div>
 
@@ -366,7 +391,7 @@
     }
 
     // ==========================================
-    // 2. 登入邏輯
+    // 2. 登入邏輯 (管理員英數代碼 + 邀請碼 aaaa8888)
     // ==========================================
     async function handleMemberLogin() {
         const phone = document.getElementById('member-phone').value.trim();
@@ -409,16 +434,42 @@
         showLoading(false);
     }
 
-    function handleAdminLogin() {
-        const user = document.getElementById('admin-user').value.trim();
-        const pwd = document.getElementById('admin-pwd').value.trim();
+    async function handleAdminLogin() {
+        const customCode = document.getElementById('admin-custom-code').value.trim();
+        const inviteCode = document.getElementById('admin-invite-code').value.trim();
 
-        if (user === "1234567" && pwd === "7654321") {
-            switchMainView('sys-admin', '管理員專區');
-            loadAdminPanel();
-        } else {
-            alert("❌ 帳號或密碼錯誤！");
+        if (!customCode) {
+            return alert("請輸入管理員代碼！");
         }
+
+        const isAlphaNumeric = /^[a-zA-Z0-9]+$/.test(customCode);
+        if (!isAlphaNumeric) {
+            return alert("管理員代碼只能包含英文與數字！");
+        }
+
+        showLoading(true);
+        try {
+            const adminDoc = await db.collection("admins").doc(customCode).get();
+            if (adminDoc.exists) {
+                switchMainView('sys-admin', '管理員專區 (' + customCode + ')');
+                loadAdminPanel();
+            } else {
+                if (inviteCode !== "aaaa8888") {
+                    showLoading(false);
+                    return alert("❌ 此代碼尚未註冊，首次使用請輸入正確的管理員邀請碼：aaaa8888");
+                }
+                await db.collection("admins").doc(customCode).set({
+                    code: customCode,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert("🎉 管理員代碼「" + customCode + "」已設定成功！日後登入只需輸入此代碼。");
+                switchMainView('sys-admin', '管理員專區 (' + customCode + ')');
+                loadAdminPanel();
+            }
+        } catch (error) {
+            alert("登入失敗：" + error.message);
+        }
+        showLoading(false);
     }
 
     // ==========================================
@@ -460,12 +511,12 @@
                 if(diffDl > 0) {
                     const d = Math.floor(diffDl / (1000 * 60 * 60 * 24));
                     const h = Math.floor((diffDl % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const m = Math.floor((diffDl % (1000 * 60 * 60)) / (1000 * 60));
+                    const m = Math.floor((diffDl % (1000 * 60)) / (1000 * 60));
                     const s = Math.floor((diffDl % (1000 * 60)) / 1000);
                     document.getElementById('countdown-deadline').innerText = `${d}天 ${h}時 ${m}分 ${s}秒`;
                     document.getElementById('btn-show-form').style.display = 'block';
                 } else {
-                    document.getElementById('countdown-deadline').innerText = "已截止 (已停止受理退款)";
+                    document.getElementById('countdown-deadline').innerText = "已截止 (未付款訂單已自動關閉)";
                     document.getElementById('btn-show-form').style.display = 'none';
                     document.getElementById('mem-form-area').style.display = 'none';
                 }
@@ -476,7 +527,7 @@
                 if(diffEvt > 0) {
                     const d = Math.floor(diffEvt / (1000 * 60 * 60 * 24));
                     const h = Math.floor((diffEvt % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const m = Math.floor((diffEvt % (1000 * 60 * 60)) / (1000 * 60));
+                    const m = Math.floor((diffEvt % (1000 * 60)) / (1000 * 60));
                     const s = Math.floor((diffEvt % (1000 * 60)) / 1000);
                     document.getElementById('countdown-event').innerText = `${d}天 ${h}時 ${m}分 ${s}秒`;
                 } else {
@@ -550,6 +601,10 @@
     }
 
     async function submitRegistration() {
+        if (!isBeforeDeadline()) {
+            return alert("活動已超過截止時間，報名已關閉。");
+        }
+
         const data = calcTotal();
         const q1 = parseInt(document.getElementById('qty-tier1').value) || 0;
         const q2 = parseInt(document.getElementById('qty-tier2').value) || 0;
@@ -576,6 +631,7 @@
                 status: "unpaid",
                 proofText: "",
                 proofImg: "",
+                paymentIssueNote: "",
                 refundReason: "",
                 refundFee: 0,
                 refundActualAmt: 0,
@@ -595,7 +651,7 @@
     }
 
     // ==========================================
-    // 4. 我的報名 (5%退款手續費計算與呈現)
+    // 4. 我的報名 (待付款關閉，審核中/補件繼續)
     // ==========================================
     function listenToMyRegistrations() {
         if(myRegistrationsUnsubscribe) myRegistrationsUnsubscribe();
@@ -616,6 +672,14 @@
     }
 
     function getTimelineHTML(status) {
+        if (status === 'issue') {
+            return `
+            <div class="timeline">
+                <div class="timeline-step active"><div class="timeline-icon" style="background:var(--danger-red);">!</div><div style="color:var(--danger-red);">款項需確認</div></div>
+                <div class="timeline-step"><div class="timeline-icon">2</div><div>聯繫主辦</div></div>
+                <div class="timeline-step"><div class="timeline-icon">3</div><div>完成核銷</div></div>
+            </div>`;
+        }
         if (status === 'refunding') {
             return `
             <div class="timeline">
@@ -629,7 +693,7 @@
             <div class="timeline">
                 <div class="timeline-step done"><div class="timeline-icon">✓</div><div>已付款</div></div>
                 <div class="timeline-step done"><div class="timeline-icon">✓</div><div>退款核銷</div></div>
-                <div class="timeline-step done"><div class="timeline-icon" style="background:#7f8c8d;">✓</div><div style="color:#7f8c8d;">退款完成 (扣5%手續費)</div></div>
+                <div class="timeline-step done"><div class="timeline-icon" style="background:#7f8c8d;">✓</div><div style="color:#7f8c8d;">退款完成 (扣5%)</div></div>
             </div>`;
         }
 
@@ -650,13 +714,42 @@
         }
         container.innerHTML = ""; 
         const canRefund = isBeforeDeadline();
+        const pastDeadline = !canRefund;
 
         myLocalHistory.forEach(myData => {
             let htmlStr = "";
             let timelineHtml = getTimelineHTML(myData.status);
             let orderNoDisplay = myData.orderNo ? `<span class="order-badge">訂單編號：${myData.orderNo}</span>` : `<span class="order-badge">編號：${myData.id}</span>`;
             
-            if(myData.status === 'unpaid') {
+            // 只有「待付款 unpaid」在截止後會被鎖定逾時
+            if (pastDeadline && myData.status === 'unpaid') {
+                htmlStr = `
+                    <div class="card" style="border-left: 5px solid #95a5a6; opacity:0.85;">
+                        <div style="margin-bottom:8px;">${orderNoDisplay} <span class="status-badge bg-expired">已逾時取消</span></div>
+                        <h3 style="color:#7f8c8d; text-decoration:line-through;">${myData.eventTitle}</h3>
+                        <p style="color:#c0392b; font-weight:bold;">⚠️ 本訂單已超過活動截止繳費時間，名額已自動失效釋出。</p>
+                        <p style="color:#666; font-size:13px;">報名時間：${formatTimeDisplay(myData.regTime)} | 應繳金額：NT$ ${myData.amt}</p>
+                    </div>`;
+            } else if (myData.status === 'issue') {
+                // 款項異常待確認 (審核中可繼續處理)
+                htmlStr = `
+                    <div class="card" style="border-left: 5px solid var(--danger-red); background:#fffaf9;">
+                        <div style="margin-bottom:8px;">${orderNoDisplay} <span class="status-badge bg-issue">款項異常需確認</span></div>
+                        <h3>${myData.eventTitle}</h3>${timelineHtml}
+                        <div class="summary-box" style="background:#ffebee; border-left-color:var(--danger-red);">
+                            <p style="margin:0 0 5px 0; color:var(--danger-red); font-weight:bold;">⚠️ 管理員提示：款項資料無法對應</p>
+                            <p style="margin:3px 0; font-size:14px; color:#444;">${myData.paymentIssueNote || "核對帳目時未查到對應末五碼或金額，請主動與管理員聯繫確認。"}</p>
+                            <p style="margin:5px 0 0 0; font-size:13px; color:#666;">原填備註：${myData.proofText || "無"}</p>
+                        </div>
+                        <div class="summary-box" style="margin-top:10px;">
+                            <p><strong>重新上傳匯款憑證：</strong></p>
+                            <input type="file" id="upload-file-${myData.id}" accept="image/*" onchange="previewUserImage(this, '${myData.id}')">
+                            <img id="img-preview-${myData.id}" class="proof-img-preview">
+                            <input type="text" id="upload-text-${myData.id}" placeholder="請重新輸入正確末五碼" style="margin-top:8px;">
+                            <button class="btn btn-outline" style="border-color:var(--danger-red); color:var(--danger-red);" onclick="submitProof('${myData.id}')">重新送出憑證</button>
+                        </div>
+                    </div>`;
+            } else if(myData.status === 'unpaid') {
                 htmlStr = `
                     <div class="card">
                         <div style="margin-bottom:8px;">${orderNoDisplay} <span class="status-badge bg-unpaid">待付款</span></div>
@@ -676,6 +769,7 @@
                         </div>
                     </div>`;
             } else if(myData.status === 'pending') {
+                // 審核中：即使截止了依然正常顯示進度
                 let imgHtml = myData.proofImg ? `<img src="${myData.proofImg}" style="max-width:100%; border-radius:8px; margin-top:10px;">` : "";
                 htmlStr = `
                     <div class="card">
@@ -684,6 +778,7 @@
                         <p style="color:#666; font-size:14px;">報名時間：${formatTimeDisplay(myData.regTime)}</p>
                         <p>報名名額：<strong>${myData.pax}</strong></p><p>應繳金額：NT$ ${myData.amt}</p>
                         <p>文字備註：${myData.proofText || "無"}</p>${imgHtml}
+                        <p style="font-size:12px; color:var(--vintage-green); margin-top:8px;">已收到您的匯款資料，管理員核對無誤後將為您核發電子入場券。</p>
                     </div>`;
             } else if(myData.status === 'approved') {
                 let refundBtn = canRefund ? `
@@ -762,6 +857,7 @@
                 proofText: textProof,
                 proofImg: imgBase64,
                 status: "pending",
+                paymentIssueNote: "",
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             alert("明細已送出！管理員核准後將自動為您生成邀請卡。");
@@ -784,7 +880,6 @@
         }
     }
 
-    // 會員主動申請退款 (扣 5% 手續費)
     async function requestRefundModal(regId, amt) {
         if (!isBeforeDeadline()) {
             return alert("活動已超過報名截止時間，無法申請退款。");
@@ -825,7 +920,7 @@
     }
 
     // ==========================================
-    // 5. 管理員後台 (含5%手續費退款核銷管理)
+    // 5. 管理員後台 (審核中/款項異常繼續核銷)
     // ==========================================
     async function loadAdminPanel() {
         showLoading(true);
@@ -931,9 +1026,15 @@
         container.innerHTML = "";
         
         const refundingList = adminAllRegistrations.filter(r => r.status === 'refunding');
-        const pendingList = adminAllRegistrations.filter(r => r.status === 'pending');
+        const pendingList = adminAllRegistrations.filter(r => r.status === 'pending' || r.status === 'issue');
         const approvedList = adminAllRegistrations.filter(r => r.status === 'approved');
         const refundedList = adminAllRegistrations.filter(r => r.status === 'refunded');
+
+        const totalReceived = approvedList.reduce((acc, cur) => acc + (Number(cur.amt) || 0), 0);
+        const pendingAmt = pendingList.reduce((acc, cur) => acc + (Number(cur.amt) || 0), 0);
+
+        document.getElementById('stat-total-received').innerText = "NT$ " + totalReceived.toLocaleString();
+        document.getElementById('stat-pending-amt').innerText = "NT$ " + pendingAmt.toLocaleString();
 
         let html = "";
 
@@ -969,7 +1070,7 @@
 
         html += `<hr style="margin:25px 0; border:none; border-top:1px dashed #ccc;">`;
 
-        // 2. 待審核付款專區
+        // 2. 待審核付款專區 (審核中/補件在截止後繼續支援核銷)
         html += `<h4 style="color:var(--taitung-blue);">⏳ 待審核付款名單 (${pendingList.length})</h4>`;
         if(pendingList.length === 0) {
             html += "<p style='color:#888;'>目前沒有待審核的名單。</p>";
@@ -977,10 +1078,14 @@
             pendingList.forEach(reg => {
                 let displayImg = reg.proofImg ? `<img src="${reg.proofImg}" style="max-width:100%; border-radius:8px; margin: 10px 0; border: 1px solid #ccc;">` : "";
                 let orderBadge = reg.orderNo ? `<span class="order-badge">訂單編號：${reg.orderNo}</span>` : `<span class="order-badge">編號：${reg.id}</span>`;
+                let isIssue = reg.status === 'issue';
 
                 html += `
-                    <div class="card" style="border-left: 5px solid #f0ad4e;">
-                        <div style="margin-bottom:6px;">${orderBadge}</div>
+                    <div class="card" style="border-left: 5px solid ${isIssue ? 'var(--danger-red)' : '#f0ad4e'};">
+                        <div style="margin-bottom:6px;">
+                            ${orderBadge} 
+                            ${isIssue ? '<span class="status-badge bg-issue">已通知款項異常</span>' : '<span class="status-badge bg-pending">待審核</span>'}
+                        </div>
                         <h3>${reg.shopName || "店家"} (${reg.phone})</h3>
                         <p style="color:#666; font-size:14px;">送單時間：${formatTimeDisplay(reg.regTime)}</p>
                         <p>報名活動：${reg.eventTitle}</p>
@@ -990,8 +1095,12 @@
                             <span style="color:var(--taitung-blue); font-weight:bold;">末五碼/備註：</span> ${reg.proofText || "未填寫"}
                             <br>${displayImg}
                         </div>
-                        <button class="btn btn-outline" style="border-color:var(--vintage-green); color:var(--vintage-green); margin-top:15px;" 
-                                onclick="approvePayment('${reg.id}')">✓ 批准確認付款</button>
+                        <div style="display:flex; gap:8px; margin-top:15px;">
+                            <button class="btn btn-outline" style="flex:2; border-color:var(--vintage-green); color:var(--vintage-green);" 
+                                    onclick="approvePayment('${reg.id}')">✓ 批准確認付款</button>
+                            <button class="btn btn-danger btn-sm" style="flex:1;" 
+                                    onclick="markPaymentIssue('${reg.id}')">⚠️ 款項不符/請聯絡管理員</button>
+                        </div>
                     </div>
                 `;
             });
@@ -1051,6 +1160,7 @@
             try {
                 await db.collection("registrations").doc(regId).update({
                     status: "approved",
+                    paymentIssueNote: "",
                     approvedAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 alert("已批准！該會員裝置已即時跳轉為電子邀請函。");
@@ -1061,7 +1171,24 @@
         }
     }
 
-    // 管理員端主動發起退款
+    async function markPaymentIssue(regId) {
+        const note = prompt("請輸入給會員的款項異常提示訊息：", "末五碼/金額對不上，請主動與主辦方聯繫確認。");
+        if (!note) return;
+
+        showLoading(true);
+        try {
+            await db.collection("registrations").doc(regId).update({
+                status: "issue",
+                paymentIssueNote: note.trim(),
+                issueMarkedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            alert("已標註款項異常！會員端開啟「我的報名」將立即收到紅字聯繫通知。");
+        } catch (error) {
+            alert("標註失敗：" + error.message);
+        }
+        showLoading(false);
+    }
+
     async function adminInitiateRefund(regId, amt) {
         const fee = Math.round(amt * 0.05);
         const actualAmt = amt - fee;
@@ -1095,7 +1222,6 @@
         showLoading(false);
     }
 
-    // 管理員確認完成退款核銷
     async function confirmRefundComplete(regId) {
         if(confirm("確認已經透過網銀將 95% 款項（已扣除 5% 手續費）原路退回給會員了嗎？\n\n核銷後電子票券將永久作廢。")) {
             showLoading(true);
