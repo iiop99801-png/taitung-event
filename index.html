@@ -157,10 +157,10 @@
             
             <div id="login-admin" class="sub-view" style="display:none;">
                 <div class="summary-box" style="font-size: 13px; line-height: 1.5;">
-                    首次使用管理員請輸入邀請碼 <strong>aaaa8888</strong>，並自訂一組管理員代碼（英文+數字）。後續只需輸入該代碼即可登入。
+                    首次使用請輸入管理員專屬邀請碼，並自訂一組管理員代碼（英文+數字）。後續只需輸入代碼即可直接登入。
                 </div>
                 <div class="form-group"><label>管理員代碼 (英數組合)</label><input type="text" id="admin-custom-code" placeholder="請輸入代碼 (例如: admin888)"></div>
-                <div class="form-group"><label>管理員邀請碼 (首次啟用必填)</label><input type="password" id="admin-invite-code" placeholder="首次登入請輸入 aaaa8888"></div>
+                <div class="form-group"><label>管理員邀請碼 (首次啟用必填)</label><input type="password" id="admin-invite-code" placeholder="首次啟用請輸入專屬邀請碼"></div>
                 <button class="btn btn-danger" onclick="handleAdminLogin()">登入管理後台</button>
             </div>
         </div>
@@ -391,7 +391,7 @@
     }
 
     // ==========================================
-    // 2. 登入邏輯 (管理員英數代碼 + 邀請碼 aaaa8888)
+    // 2. 登入邏輯 (管理員英數代碼 + 邀請碼驗證)
     // ==========================================
     async function handleMemberLogin() {
         const phone = document.getElementById('member-phone').value.trim();
@@ -456,7 +456,7 @@
             } else {
                 if (inviteCode !== "aaaa8888") {
                     showLoading(false);
-                    return alert("❌ 此代碼尚未註冊，首次使用請輸入正確的管理員邀請碼：aaaa8888");
+                    return alert("❌ 首次啟用請輸入正確的管理員專屬邀請碼！");
                 }
                 await db.collection("admins").doc(customCode).set({
                     code: customCode,
@@ -511,7 +511,7 @@
                 if(diffDl > 0) {
                     const d = Math.floor(diffDl / (1000 * 60 * 60 * 24));
                     const h = Math.floor((diffDl % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const m = Math.floor((diffDl % (1000 * 60)) / (1000 * 60));
+                    const m = Math.floor((diffDl % (1000 * 60 * 60)) / (1000 * 60));
                     const s = Math.floor((diffDl % (1000 * 60)) / 1000);
                     document.getElementById('countdown-deadline').innerText = `${d}天 ${h}時 ${m}分 ${s}秒`;
                     document.getElementById('btn-show-form').style.display = 'block';
@@ -527,7 +527,7 @@
                 if(diffEvt > 0) {
                     const d = Math.floor(diffEvt / (1000 * 60 * 60 * 24));
                     const h = Math.floor((diffEvt % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const m = Math.floor((diffEvt % (1000 * 60)) / (1000 * 60));
+                    const m = Math.floor((diffEvt % (1000 * 60 * 60)) / (1000 * 60));
                     const s = Math.floor((diffEvt % (1000 * 60)) / 1000);
                     document.getElementById('countdown-event').innerText = `${d}天 ${h}時 ${m}分 ${s}秒`;
                 } else {
@@ -651,7 +651,7 @@
     }
 
     // ==========================================
-    // 4. 我的報名 (待付款關閉，審核中/補件繼續)
+    // 4. 我的報名
     // ==========================================
     function listenToMyRegistrations() {
         if(myRegistrationsUnsubscribe) myRegistrationsUnsubscribe();
@@ -721,7 +721,6 @@
             let timelineHtml = getTimelineHTML(myData.status);
             let orderNoDisplay = myData.orderNo ? `<span class="order-badge">訂單編號：${myData.orderNo}</span>` : `<span class="order-badge">編號：${myData.id}</span>`;
             
-            // 只有「待付款 unpaid」在截止後會被鎖定逾時
             if (pastDeadline && myData.status === 'unpaid') {
                 htmlStr = `
                     <div class="card" style="border-left: 5px solid #95a5a6; opacity:0.85;">
@@ -731,7 +730,6 @@
                         <p style="color:#666; font-size:13px;">報名時間：${formatTimeDisplay(myData.regTime)} | 應繳金額：NT$ ${myData.amt}</p>
                     </div>`;
             } else if (myData.status === 'issue') {
-                // 款項異常待確認 (審核中可繼續處理)
                 htmlStr = `
                     <div class="card" style="border-left: 5px solid var(--danger-red); background:#fffaf9;">
                         <div style="margin-bottom:8px;">${orderNoDisplay} <span class="status-badge bg-issue">款項異常需確認</span></div>
@@ -769,7 +767,6 @@
                         </div>
                     </div>`;
             } else if(myData.status === 'pending') {
-                // 審核中：即使截止了依然正常顯示進度
                 let imgHtml = myData.proofImg ? `<img src="${myData.proofImg}" style="max-width:100%; border-radius:8px; margin-top:10px;">` : "";
                 htmlStr = `
                     <div class="card">
@@ -845,6 +842,10 @@
     }
 
     async function submitProof(regId) {
+        if (!isBeforeDeadline()) {
+            return alert("活動已截止，繳費審核通道已關閉。");
+        }
+
         const textProof = document.getElementById('upload-text-' + regId).value.trim();
         const imgEl = document.getElementById('img-preview-' + regId);
         let imgBase64 = imgEl.style.display === 'block' ? imgEl.src : "";
@@ -920,7 +921,7 @@
     }
 
     // ==========================================
-    // 5. 管理員後台 (審核中/款項異常繼續核銷)
+    // 5. 管理員後台
     // ==========================================
     async function loadAdminPanel() {
         showLoading(true);
@@ -1070,7 +1071,7 @@
 
         html += `<hr style="margin:25px 0; border:none; border-top:1px dashed #ccc;">`;
 
-        // 2. 待審核付款專區 (審核中/補件在截止後繼續支援核銷)
+        // 2. 待審核付款專區
         html += `<h4 style="color:var(--taitung-blue);">⏳ 待審核付款名單 (${pendingList.length})</h4>`;
         if(pendingList.length === 0) {
             html += "<p style='color:#888;'>目前沒有待審核的名單。</p>";
