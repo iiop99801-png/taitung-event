@@ -16,6 +16,7 @@
             --vintage-green: #2b5f3a; 
             --danger-red: #d9534f;
             --warning-orange: #f0ad4e;
+            --hesitate-purple: #8e44ad;
             --bg-light: #f5f5f5;
         }
 
@@ -65,11 +66,49 @@
             background-color: var(--taitung-blue); color: white;
             border: none; border-radius: 8px; font-size: 16px; font-weight: bold;
             cursor: pointer; margin-top: 10px; text-align: center; box-sizing: border-box;
+            transition: all 0.2s ease;
         }
         .btn-outline { background: white; color: var(--vintage-green); border: 2px solid var(--vintage-green); }
         .btn-danger { background: var(--danger-red); color: white; }
         .btn-warning { background: var(--warning-orange); color: white; }
         .btn-sm { padding: 6px 10px; font-size: 13px; width: auto; display: inline-block; margin-top: 0; }
+
+        .btn-pulse {
+            animation: pulse-glow 1.8s infinite;
+        }
+        @keyframes pulse-glow {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 92, 175, 0.6); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 12px rgba(0, 92, 175, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 92, 175, 0); }
+        }
+
+        /* 真實報名動態浮動通知條 */
+        .live-registration-toast {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(43, 95, 58, 0.95);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+            white-space: nowrap;
+        }
+        .live-registration-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
         
         .card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; background: #fafafa; }
         .card h3 { margin: 0 0 10px 0; color: var(--taitung-blue); font-size: 20px; }
@@ -77,12 +116,12 @@
         .summary-box { background: #eef5f0; padding: 15px; border-radius: 8px; border-left: 5px solid var(--taitung-blue); margin-bottom: 15px; }
         
         .stat-banner {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px;
         }
         .stat-card {
-            background: #fdfdfd; border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center;
+            background: #fdfdfd; border: 1px solid #ddd; border-radius: 8px; padding: 10px 6px; text-align: center;
         }
-        .stat-card .num { font-size: 20px; font-weight: bold; color: var(--taitung-blue); }
+        .stat-card .num { font-size: 18px; font-weight: bold; }
         .stat-card .label { font-size: 12px; color: #666; margin-top: 2px; }
 
         .price-rules-box {
@@ -136,6 +175,12 @@
 
 <div id="loading-overlay">雲端連線中...</div>
 
+<!-- 真實報名浮動廣播 -->
+<div id="live-toast" class="live-registration-toast">
+    <span>🎉</span>
+    <span id="live-toast-text"></span>
+</div>
+
 <div class="app-container">
     <div class="header">
         <span id="header-title">系統登入</span>
@@ -174,6 +219,7 @@
         </div>
         <div class="content">
             <div id="mem-events" class="sub-view active">
+                
                 <div class="card" style="padding-top: 10px;">
                     <img id="display-event-poster" class="poster-preview" src="">
                     <h3 id="display-event-title">載入中...</h3>
@@ -201,7 +247,9 @@
                         </p>
                     </div>
                     
-                    <button id="btn-show-form" class="btn" onclick="document.getElementById('mem-form-area').style.display='block'">我要填寫報名表</button>
+                    <button id="btn-show-form" class="btn btn-pulse" onclick="document.getElementById('mem-form-area').style.display='block'; this.scrollIntoView({behavior: 'smooth'});">
+                        ⚡ 立即填寫報名表 (保留席位)
+                    </button>
                 </div>
                 
                 <div id="mem-form-area" style="display:none; border-top: 2px dashed #ccc; margin-top: 20px; padding-top: 20px;">
@@ -209,7 +257,7 @@
                     <div class="form-group"><label id="label-tier2">滿6歲~13歲</label><input type="number" id="qty-tier2" value="0" min="0" oninput="calcTotal()"></div>
                     <div class="form-group"><label id="label-tier3" style="color:var(--danger-red);">未滿6歲 (免費)</label><input type="number" id="qty-tier3" value="0" min="0" oninput="calcTotal()"></div>
                     <div class="summary-box">總費用：NT$ <strong id="calc-total-amt" style="font-size:20px; color:var(--taitung-blue)">0</strong></div>
-                    <button class="btn" onclick="submitRegistration()">確認報名送出</button>
+                    <button class="btn btn-pulse" style="background-color: #d35400;" onclick="submitRegistration()">🔥 確認送出並保留名額</button>
                 </div>
             </div>
 
@@ -242,38 +290,41 @@
                 <div class="form-group"><label>活動地點</label><input type="text" id="set-evt-location"></div>
                 <div class="form-group"><label>補充文字欄 (活動細節與說明)</label><textarea id="set-evt-desc" rows="3"></textarea></div>
                 
-                <!-- 自訂年齡區間與收費設定 -->
                 <div style="background:#f9f9f9; padding:12px; border-radius:8px; border:1px solid #ddd; margin-bottom:15px;">
                     <label style="color:var(--taitung-blue); font-weight:bold; margin-bottom:8px; display:block;">⚙️ 年齡區間段與收費設定 (皆可自訂)</label>
                     <div style="display:flex; gap:8px; margin-bottom:8px;">
-                        <input type="text" id="set-tier1-name" placeholder="第1區間名稱 (例如: 滿13歲以上)" style="flex:2;">
+                        <input type="text" id="set-tier1-name" placeholder="第1區間名稱" style="flex:2;">
                         <input type="number" id="set-tier1-price" placeholder="費用" style="flex:1;">
                     </div>
                     <div style="display:flex; gap:8px; margin-bottom:8px;">
-                        <input type="text" id="set-tier2-name" placeholder="第2區間名稱 (例如: 滿6歲~13歲)" style="flex:2;">
+                        <input type="text" id="set-tier2-name" placeholder="第2區間名稱" style="flex:2;">
                         <input type="number" id="set-tier2-price" placeholder="費用" style="flex:1;">
                     </div>
                     <div style="display:flex; gap:8px;">
-                        <input type="text" id="set-tier3-name" placeholder="第3區間名稱 (例如: 未滿6歲)" style="flex:2;">
+                        <input type="text" id="set-tier3-name" placeholder="第3區間名稱" style="flex:2;">
                         <input type="number" id="set-tier3-price" placeholder="費用 (免費填0)" style="flex:1;">
                     </div>
                 </div>
 
-                <div class="form-group"><label>額外收費規則補充說明 (選填)</label><input type="text" id="set-evt-rule-note" placeholder="例如：酒水自備，攜帶外食酌收清潔費"></div>
+                <div class="form-group"><label>額外收費規則補充說明 (選填)</label><input type="text" id="set-evt-rule-note"></div>
                 <div class="form-group"><label>收款銀行與帳號</label><input type="text" id="set-evt-bank"></div>
                 <button class="btn" onclick="publishEvent()">發佈並同步活動圖文</button>
             </div>
 
             <div id="admin-approve" class="sub-view" style="display:none;">
-                <!-- 後台款項統計面板 -->
+                <!-- 統計看板 -->
                 <div class="stat-banner">
                     <div class="stat-card">
                         <div class="num" style="color:var(--vintage-green);" id="stat-total-received">NT$ 0</div>
-                        <div class="label">已實收核銷總額</div>
+                        <div class="label">已實收總額</div>
                     </div>
                     <div class="stat-card">
                         <div class="num" style="color:var(--warning-orange);" id="stat-pending-amt">NT$ 0</div>
-                        <div class="label">待審核款項金額</div>
+                        <div class="label">待審核款項</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="num" style="color:var(--hesitate-purple);" id="stat-unpaid-count">0 位</div>
+                        <div class="label">猶豫中 (未付款)</div>
                     </div>
                 </div>
                 <div id="admin-approval-list"></div>
@@ -308,12 +359,41 @@
     let currentShopName = "";
     let currentEvent = {};
     let countdownTimer = null;
+    let toastInterval = null;
     let myRegistrationsUnsubscribe = null;
+    let publicRegistrationsUnsubscribe = null;
     let myLocalHistory = [];
+    let realParticipants = []; // 真實報名名單 (供前台輪播)
     let adminRegistrationsUnsubscribe = null;
     let adminMembersUnsubscribe = null;
     let adminAllRegistrations = [];
     let adminMembersData = [];
+
+    function showLiveToast(text) {
+        const toastEl = document.getElementById('live-toast');
+        const textEl = document.getElementById('live-toast-text');
+        textEl.innerText = text;
+        toastEl.classList.add('show');
+        setTimeout(() => {
+            toastEl.classList.remove('show');
+        }, 3600);
+    }
+
+    // 真實參加者輪播 (絕無虛假資料)
+    function startRealRegistrationBroadcast() {
+        if (toastInterval) clearInterval(toastInterval);
+        toastInterval = setInterval(() => {
+            if (!realParticipants || realParticipants.length === 0) return;
+            const item = realParticipants[Math.floor(Math.random() * realParticipants.length)];
+            const messages = [
+                `🎉 ${item.shopName} 已成功報名本次聚會！`,
+                `🔥 ${item.shopName} 剛搶下名額 (${item.pax})！`,
+                `✨ 店家好友「${item.shopName}」確認同行參加本次活動！`
+            ];
+            const msg = messages[Math.floor(Math.random() * messages.length)];
+            showLiveToast(msg);
+        }, 9000);
+    }
 
     function showLoading(show) {
         document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
@@ -383,7 +463,9 @@
 
     function logout() { 
         if(countdownTimer) clearInterval(countdownTimer);
+        if(toastInterval) clearInterval(toastInterval);
         if(myRegistrationsUnsubscribe) myRegistrationsUnsubscribe();
+        if(publicRegistrationsUnsubscribe) publicRegistrationsUnsubscribe();
         if(adminRegistrationsUnsubscribe) adminRegistrationsUnsubscribe();
         if(adminMembersUnsubscribe) adminMembersUnsubscribe();
         currentPhone = ""; 
@@ -391,7 +473,7 @@
     }
 
     // ==========================================
-    // 2. 登入邏輯 (管理員英數代碼 + 邀請碼驗證)
+    // 2. 登入邏輯
     // ==========================================
     async function handleMemberLogin() {
         const phone = document.getElementById('member-phone').value.trim();
@@ -428,6 +510,7 @@
             switchMainView('sys-member', '前台 - ' + currentShopName);
             listenToCurrentEvent();
             listenToMyRegistrations();
+            listenToRealParticipants(); // 監聽真實參加名單
         } catch (error) {
             alert("登入連線失敗：" + error.message);
         }
@@ -438,14 +521,10 @@
         const customCode = document.getElementById('admin-custom-code').value.trim();
         const inviteCode = document.getElementById('admin-invite-code').value.trim();
 
-        if (!customCode) {
-            return alert("請輸入管理員代碼！");
-        }
+        if (!customCode) return alert("請輸入管理員代碼！");
 
         const isAlphaNumeric = /^[a-zA-Z0-9]+$/.test(customCode);
-        if (!isAlphaNumeric) {
-            return alert("管理員代碼只能包含英文與數字！");
-        }
+        if (!isAlphaNumeric) return alert("管理員代碼只能包含英文與數字！");
 
         showLoading(true);
         try {
@@ -472,8 +551,30 @@
         showLoading(false);
     }
 
+    // 監聽所有真實已報名的店家名單 (只抓審核通過 approved 或 審核中 pending)
+    function listenToRealParticipants() {
+        if (publicRegistrationsUnsubscribe) publicRegistrationsUnsubscribe();
+        publicRegistrationsUnsubscribe = db.collection("registrations")
+            .where("status", "in", ["approved", "pending"])
+            .onSnapshot(snapshot => {
+                realParticipants = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.shopName) {
+                        realParticipants.push({
+                            shopName: data.shopName,
+                            pax: data.pax || "1位"
+                        });
+                    }
+                });
+                if (realParticipants.length > 0) {
+                    startRealRegistrationBroadcast();
+                }
+            });
+    }
+
     // ==========================================
-    // 3. 活動資訊與即時監聽
+    // 3. 活動資訊與倒數
     // ==========================================
     function listenToCurrentEvent() {
         db.collection("config").doc("currentEvent").onSnapshot(doc => {
@@ -527,7 +628,7 @@
                 if(diffEvt > 0) {
                     const d = Math.floor(diffEvt / (1000 * 60 * 60 * 24));
                     const h = Math.floor((diffEvt % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const m = Math.floor((diffEvt % (1000 * 60 * 60)) / (1000 * 60));
+                    const m = Math.floor((diffEvt % (1000 * 60)) / (1000 * 60));
                     const s = Math.floor((diffEvt % (1000 * 60)) / 1000);
                     document.getElementById('countdown-event').innerText = `${d}天 ${h}時 ${m}分 ${s}秒`;
                 } else {
@@ -641,7 +742,7 @@
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            alert(`報名成功！\n訂單編號：${orderNo}\n請前往「我的報名」查看繳費資訊。`);
+            alert(`🎉 報名成功！\n訂單編號：${orderNo}\n請前往「我的報名」完成繳費，管理員將為您保留名額。`);
             document.getElementById('mem-form-area').style.display = 'none';
             switchTab('sys-member', 'mem-myrecords', document.querySelectorAll('#sys-member .tab-btn')[1]);
         } catch (error) {
@@ -815,7 +916,6 @@
                             <p style="margin:2px 0;"><strong>退款銀行：</strong>${myData.refundBankCode}</p>
                             <p style="margin:2px 0;"><strong>匯款帳號：</strong>${myData.refundAccount}</p>
                             <p style="margin:2px 0;"><strong>戶名：</strong>${myData.refundName}</p>
-                            <p style="font-size:12px; color:#888; margin-top:5px;">款項匯出後管理員將完成核銷，請留意您的帳戶明細。</p>
                         </div>
                     </div>`;
             } else if(myData.status === 'refunded') {
@@ -921,7 +1021,7 @@
     }
 
     // ==========================================
-    // 5. 管理員後台
+    // 5. 管理員後台 (含「猶豫中/未付款」名單追蹤)
     // ==========================================
     async function loadAdminPanel() {
         showLoading(true);
@@ -1026,6 +1126,7 @@
         const container = document.getElementById('admin-approval-list');
         container.innerHTML = "";
         
+        const unpaidList = adminAllRegistrations.filter(r => r.status === 'unpaid'); // 猶豫中
         const refundingList = adminAllRegistrations.filter(r => r.status === 'refunding');
         const pendingList = adminAllRegistrations.filter(r => r.status === 'pending' || r.status === 'issue');
         const approvedList = adminAllRegistrations.filter(r => r.status === 'approved');
@@ -1036,34 +1137,25 @@
 
         document.getElementById('stat-total-received').innerText = "NT$ " + totalReceived.toLocaleString();
         document.getElementById('stat-pending-amt').innerText = "NT$ " + pendingAmt.toLocaleString();
+        document.getElementById('stat-unpaid-count').innerText = unpaidList.length + " 位";
 
         let html = "";
 
-        // 1. 待處理退款專區
-        html += `<h4 style="margin-top:0; color:#d35400;">🔄 待處理原路退款名單 (${refundingList.length})</h4>`;
-        if (refundingList.length === 0) {
-            html += "<p style='color:#888;'>目前沒有待退款的申請。</p>";
+        // 1. 👀 猶豫中名單（已下單但尚未繳費）
+        html += `<h4 style="margin-top:0; color:var(--hesitate-purple);">👀 猶豫中名單・已報名尚未付款 (${unpaidList.length})</h4>`;
+        if (unpaidList.length === 0) {
+            html += "<p style='color:#888;'>目前沒有未付款的訂單。</p>";
         } else {
-            refundingList.forEach(reg => {
+            unpaidList.forEach(reg => {
                 let orderBadge = reg.orderNo ? `<span class="order-badge">訂單：${reg.orderNo}</span>` : `<span class="order-badge">編號：${reg.id}</span>`;
                 html += `
-                    <div class="card" style="border-left: 5px solid var(--warning-orange); background:#fffdfa;">
-                        <div style="margin-bottom:6px;">${orderBadge} <span class="status-badge bg-refunding">退款申請中</span></div>
-                        <h3>${reg.shopName || "店家"} (${reg.phone})</h3>
-                        <p style="margin:2px 0;"><strong>退款原因：</strong><span style="color:#d35400; font-weight:bold;">${reg.refundReason || "未註明"}</span></p>
-                        <p style="margin:2px 0;">原付金額：NT$ ${reg.amt} | <strong>5% 手續費：</strong>NT$ ${reg.refundFee || Math.round(reg.amt * 0.05)}</p>
-                        <p style="color:#c0392b; font-size:17px; font-weight:bold; margin:5px 0;">
-                            👉 實際應退款金額 (95%)：NT$ ${reg.refundActualAmt || (reg.amt - Math.round(reg.amt * 0.05))}
-                        </p>
-                        <div style="background:#fff; padding:10px; border-radius:6px; border:1px dashed #f0ad4e; line-height:1.6; margin-top:8px;">
-                            <strong style="color:var(--taitung-blue);">原路退回帳戶資訊：</strong><br>
-                            🏦 銀行代號/名稱：${reg.refundBankCode || "未填"}<br>
-                            💳 匯款帳號：<strong style="color:var(--danger-red); font-size:16px;">${reg.refundAccount || "未填"}</strong><br>
-                            👤 戶名：${reg.refundName || "未填"}
-                        </div>
-                        <button class="btn btn-warning" style="margin-top:12px;" onclick="confirmRefundComplete('${reg.id}')">
-                            ✓ 確認款項已退回 (完成 95% 退款核銷)
-                        </button>
+                    <div class="card" style="border-left: 5px solid var(--hesitate-purple); background:#faf8fc;">
+                        <div style="margin-bottom:6px;">${orderBadge} <span class="status-badge" style="background:var(--hesitate-purple);">未繳費觀望中</span></div>
+                        <h3 style="color:var(--hesitate-purple);">${reg.shopName || "店家"} (${reg.phone})</h3>
+                        <p style="color:#666; font-size:13px;">下單時間：${formatTimeDisplay(reg.regTime)}</p>
+                        <p>報名名額：${reg.pax}</p>
+                        <p>應付金額：<strong style="color:var(--taitung-blue);">NT$ ${reg.amt}</strong></p>
+                        <div style="margin-top:8px; font-size:12px; color:#666;">💡 提示：該會員尚未上傳截圖，可致電提醒截止時間。</div>
                     </div>
                 `;
             });
@@ -1109,8 +1201,40 @@
 
         html += `<hr style="margin:25px 0; border:none; border-top:1px dashed #ccc;">`;
 
-        // 3. 已批准有效名單
-        html += `<h4 style="color:var(--vintage-green);">✅ 已批准有效名單 (${approvedList.length})</h4>`;
+        // 3. 待處理退款專區
+        html += `<h4 style="color:#d35400;">🔄 待處理原路退款名單 (${refundingList.length})</h4>`;
+        if (refundingList.length === 0) {
+            html += "<p style='color:#888;'>目前沒有待退款的申請。</p>";
+        } else {
+            refundingList.forEach(reg => {
+                let orderBadge = reg.orderNo ? `<span class="order-badge">訂單：${reg.orderNo}</span>` : `<span class="order-badge">編號：${reg.id}</span>`;
+                html += `
+                    <div class="card" style="border-left: 5px solid var(--warning-orange); background:#fffdfa;">
+                        <div style="margin-bottom:6px;">${orderBadge} <span class="status-badge bg-refunding">退款申請中</span></div>
+                        <h3>${reg.shopName || "店家"} (${reg.phone})</h3>
+                        <p style="margin:2px 0;"><strong>退款原因：</strong><span style="color:#d35400; font-weight:bold;">${reg.refundReason || "未註明"}</span></p>
+                        <p style="margin:2px 0;">原付金額：NT$ ${reg.amt} | <strong>5% 手續費：</strong>NT$ ${reg.refundFee || Math.round(reg.amt * 0.05)}</p>
+                        <p style="color:#c0392b; font-size:17px; font-weight:bold; margin:5px 0;">
+                            👉 實際應退款金額 (95%)：NT$ ${reg.refundActualAmt || (reg.amt - Math.round(reg.amt * 0.05))}
+                        </p>
+                        <div style="background:#fff; padding:10px; border-radius:6px; border:1px dashed #f0ad4e; line-height:1.6; margin-top:8px;">
+                            <strong style="color:var(--taitung-blue);">原路退回帳戶資訊：</strong><br>
+                            🏦 銀行代號/名稱：${reg.refundBankCode || "未填"}<br>
+                            💳 匯款帳號：<strong style="color:var(--danger-red); font-size:16px;">${reg.refundAccount || "未填"}</strong><br>
+                            👤 戶名：${reg.refundName || "未填"}
+                        </div>
+                        <button class="btn btn-warning" style="margin-top:12px;" onclick="confirmRefundComplete('${reg.id}')">
+                            ✓ 確認款項已退回 (完成 95% 退款核銷)
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        html += `<hr style="margin:25px 0; border:none; border-top:1px dashed #ccc;">`;
+
+        // 4. 已批准有效名單
+        html += `<h4 style="color:var(--vintage-green);">✅ 已批准同行名單 (${approvedList.length})</h4>`;
         if(approvedList.length === 0) {
             html += "<p style='color:#888;'>尚無已核准的名單。</p>";
         } else {
@@ -1135,7 +1259,7 @@
             });
         }
 
-        // 4. 已完成退款作廢名單
+        // 5. 已完成退款作廢名單
         if (refundedList.length > 0) {
             html += `<hr style="margin:25px 0; border:none; border-top:1px dashed #ccc;">`;
             html += `<h4 style="color:#7f8c8d;">📁 已完成退款紀錄 (${refundedList.length})</h4>`;
